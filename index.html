@@ -10,7 +10,7 @@
     .card { background:#111827; border:1px solid #334155; border-radius:14px; padding:14px; }
     .prompt { margin-top:6px; padding:10px; background:#020617; border-radius:10px; }
     textarea { width:100%; margin-top:12px; background:black; color:#22c55e; border-radius:10px; padding:10px; border:1px solid #334155; }
-    button { padding:10px 12px; border-radius:10px; border:0; cursor:pointer; margin-left:8px; background:#e5e7eb; }
+    button { padding:10px 12px; border-radius:10px; border:0; cursor:pointer; background:#e5e7eb; }
     button:disabled { opacity: .6; cursor: not-allowed; }
     .primary { background:#38bdf8; }
     .row { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
@@ -19,10 +19,8 @@
     pre { background:black; border:1px solid #334155; border-radius:10px; padding:10px; min-height:120px; white-space:pre-wrap; }
     .label { font-size:12px; opacity:.7; margin-bottom:6px; }
     ul { margin:0; padding-left:18px; }
-    .small { opacity: .8; margin: 6px 0 14px; }
-    @media (max-width: 900px) {
-      .split { grid-template-columns: 1fr; }
-    }
+    .small { opacity: .85; margin: 6px 0 14px; }
+    @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
   </style>
 </head>
 
@@ -37,7 +35,8 @@
         <div id="prompt" class="prompt"></div>
       </div>
       <div class="right">
-        <button id="hintBtn">Hint (10 left)</button>
+        <button id="hintBtn">Hint</button>
+        <button id="exBtn">EX Code</button>
         <button id="runBtn">Run</button>
         <button id="submitBtn" class="primary">Submit</button>
       </div>
@@ -63,7 +62,7 @@
   <script>
     window.addEventListener("DOMContentLoaded", () => {
 
-      // ---------------- LEVELS (Add more levels here) ----------------
+      // ---------------- LEVELS (add more levels here) ----------------
       const LEVELS = [
         {
           title: "LEVEL 1 – Vault Boot",
@@ -78,6 +77,8 @@
             "No extra spaces",
             "Exactly: ACCESS GRANTED"
           ],
+          // EXAMPLE (NOT the answer)
+          exampleCode: "print(\"WELCOME USER\")",
           expectedOutput: "ACCESS GRANTED"
         },
         {
@@ -93,9 +94,9 @@
             "Use quotes around OPEN",
             "Only one print is enough"
           ],
+          exampleCode: "msg = \"HELLO\"\nprint(msg)",
           expectedOutput: "OPEN",
           extraCheck: (py) => {
-            // check that variable 'code' exists and equals 'OPEN'
             return Boolean(py.runPython("('code' in globals()) and (code == 'OPEN')"));
           }
         }
@@ -116,6 +117,7 @@
       const elHints = document.getElementById("hints");
 
       const hintBtn = document.getElementById("hintBtn");
+      const exBtn = document.getElementById("exBtn");
       const runBtn = document.getElementById("runBtn");
       const submitBtn = document.getElementById("submitBtn");
 
@@ -124,17 +126,20 @@
         runBtn.disabled = isBusy;
         submitBtn.disabled = isBusy;
         hintBtn.disabled = isBusy;
+        exBtn.disabled = isBusy;
       }
 
       function resetStdout(py) {
         py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
       }
+
       function getStdout(py) {
         return String(py.runPython("sys.stdout.getvalue()"));
       }
 
       function loadLevel(i) {
         const L = LEVELS[i];
+
         elLevelTitle.textContent = L.title;
         elStory.textContent = L.story;
         elPrompt.textContent = L.prompt;
@@ -145,7 +150,11 @@
 
         shownHints = 0;
         hintsLeft = L.hintBudget;
+
         hintBtn.textContent = `Hint (${hintsLeft} left)`;
+
+        // EX Code shows only after hints become 0 (fair rule)
+        exBtn.style.display = "none";
       }
 
       async function ensurePyodide() {
@@ -198,7 +207,7 @@
 
           let pass = (out === expected);
 
-          // optional extra checks
+          // Optional extra checks per level (like variable existence)
           if (pass && typeof L.extraCheck === "function") {
             pass = L.extraCheck(py);
           }
@@ -208,7 +217,8 @@
             levelIndex++;
 
             if (levelIndex >= LEVELS.length) {
-              elOutput.textContent = "🎉 You finished all levels!\n\n(You can add more levels in the LEVELS array.)";
+              elOutput.textContent =
+                "🎉 You finished all levels!\n\n(Add more levels inside the LEVELS array.)";
               return;
             }
 
@@ -237,9 +247,27 @@
         li.textContent = L.hints[shownHints] || "No more hint messages, but you still have hint credits.";
         elHints.appendChild(li);
         shownHints++;
+
+        // When hints reach 0, show EX Code button
+        if (hintsLeft === 0) {
+          exBtn.style.display = "inline-block";
+        }
       };
 
-      // Start on level 1
+      exBtn.onclick = () => {
+        const L = LEVELS[levelIndex];
+        if (!L.exampleCode) {
+          elOutput.textContent = "No example available for this level.";
+          return;
+        }
+
+        elOutput.textContent =
+          "📘 EX CODE (similar example, NOT the answer):\n\n" +
+          L.exampleCode +
+          "\n\n⚠️ Now modify this code to solve the mission.";
+      };
+
+      // Start at Level 1
       loadLevel(levelIndex);
     });
   </script>
