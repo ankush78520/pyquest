@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>PyQuest</title>
+  <style>
+    body { font-family: Arial; background:#0f172a; color:white; padding:20px; }
+    .card { background:#111827; border:1px solid #334155; border-radius:14px; padding:14px; }
+    .prompt { margin-top:6px; padding:10px; background:#020617; border-radius:10px; }
+    textarea { width:100%; margin-top:12px; background:black; color:#22c55e; border-radius:10px; padding:10px; border:1px solid #334155; }
+    button { padding:10px 12px; border-radius:10px; border:0; cursor:pointer; margin-left:8px; }
+    .primary { background:#38bdf8; }
+    .row { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+    .right { display:flex; flex-wrap:wrap; justify-content:flex-end; }
+    .split { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
+    pre { background:black; border:1px solid #334155; border-radius:10px; padding:10px; min-height:90px; white-space:pre-wrap; }
+    .label { font-size:12px; opacity:.7; margin-bottom:6px; }
+    ul { margin:0; padding-left:18px; }
+  </style>
+</head>
+<body>
+  <h1>🐍 PyQuest – Learn Python</h1>
+  <p id="story"></p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <b id="levelTitle"></b>
+        <div id="prompt" class="prompt"></div>
+      </div>
+      <div class="right">
+        <button id="hintBtn">Hint (10 left)</button>
+        <button id="runBtn">Run</button>
+        <button id="submitBtn" class="primary">Submit</button>
+      </div>
+    </div>
+
+    <textarea id="code" rows="7"></textarea>
+
+    <div class="split">
+      <div>
+        <div class="label">Output</div>
+        <pre id="output"></pre>
+      </div>
+      <div>
+        <div class="label">Hints</div>
+        <ul id="hints"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+
+  <script>
+    const LEVELS = [
+      {
+        title: "LEVEL 1 – Vault Boot",
+        story: "You are locked inside a space vault. The console wants a boot message.",
+        prompt: "Print exactly: ACCESS GRANTED",
+        starter: "# Write your code here\\n",
+        hintBudget: 10,
+        hints: [
+          "Use print()",
+          "Text must be in quotes",
+          "Example: print('HELLO')",
+          "No extra spaces",
+          "Exactly: ACCESS GRANTED"
+        ],
+        expectedOutput: "ACCESS GRANTED"
+      },
+      {
+        title: "LEVEL 2 – Secret Code Variable",
+        story: "Nice! Now store the passcode in a variable and print it.",
+        prompt: "Create variable named code = 'OPEN' and print it",
+        starter: "# code = 'OPEN'\\n# print(code)\\n",
+        hintBudget: 10,
+        hints: [
+          "Variable name must be: code",
+          "Use: code = 'OPEN'",
+          "Then print(code)",
+          "Use quotes around OPEN",
+          "Only one print is enough"
+        ],
+        expectedOutput: "OPEN",
+        extraCheck: (py) => {
+          const ok = py.runPython("('code' in globals()) and (code == 'OPEN')");
+          return Boolean(ok);
+        }
+      }
+    ];
+
+    let levelIndex = 0;
+    let hintsLeft = 0;
+    let shownHints = 0;
+    let pyodide = null;
+
+    const elStory = document.getElementById("story");
+    const elLevelTitle = document.getElementById("levelTitle");
+    const elPrompt = document.getElementById("prompt");
+    const elCode = document.getElementById("code");
+    const elOutput = document.getElementById("output");
+    const elHints = document.getElementById("hints");
+    const hintBtn = document.getElementById("hintBtn");
+
+    function resetStdout(py) {
+      py.runPython(\`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+\`);
+    }
+    function getStdout(py) {
+      return String(py.runPython("sys.stdout.getvalue()"));
+    }
+
+    function loadLevel(i) {
+      const L = LEVELS[i];
+      elLevelTitle.textContent = L.title;
+      elStory.textContent = L.story;
+      elPrompt.textContent = L.prompt;
+      elCode.value = L.starter;
+      elOutput.textContent = "";
+      elHints.innerHTML = "";
+      shownHints = 0;
+      hintsLeft = L.hintBudget;
+      hintBtn.textContent = \`Hint (\${hintsLeft} left)\`;
+    }
+
+    async function ensurePyodide() {
+      if (pyodide) return pyodide;
+      elOutput.textContent = "Loading Python engine...";
+      pyodide = await loadPyodide();
+      elOutput.textContent = "Ready ✅";
+      return pyodide;
+    }
+
+    function friendlyError(e) {
+      const msg = String(e?.message || e);
+      if (msg.includes("SyntaxError")) return msg + "\\nTip: Check brackets, quotes, colons, indentation.";
+      if (msg.includes("NameError")) return msg + "\\nTip: You used a variable before defining it.";
+      if (msg.includes("IndentationError")) return msg + "\\nTip: Python indentation matters.";
+      return msg;
+    }
+
+    document.getElementById("runBtn").onclick = async () => {
+      const py = await ensurePyodide();
+      try {
+        resetStdout(py);
+        py.runPython(elCode.value);
+        elOutput.textContent = getStdout(py) || "(no output)";
+      } catch (e) {
+        elOutput.textContent = friendlyError(e);
+      }
+    };
+
+    document.getElementById("submitBtn").onclick = async () => {
+      const py = await ensurePyodide();
+      const L = LEVELS[levelIndex];
+
+      try {
+        resetStdout(py);
+        py.runPython(elCode.value);
+
+        const out = getStdout(py).trim();
+        const expected = String(L.expectedOutput).trim();
+
+        let pass = (out === expected);
+
+        if (pass && typeof L.extraCheck === "function") {
+          pass = L.extraCheck(py);
+        }
+
+        if (pass) {
+          alert(\`✅ Successfully completed \${L.title}!\`);
+          levelIndex++;
+          if (levelIndex >= LEVELS.length) {
+            elOutput.textContent = "🎉 You finished all levels! Add more levels in the LEVELS list.";
+            return;
+          }
+          loadLevel(levelIndex);
+        } else {
+          elOutput.textContent =
+            \`❌ Not correct yet.\\nExpected: \${expected}\\nGot: \${out || "(no output)"}\\n\\nTry again.\`;
+        }
+      } catch (e) {
+        elOutput.textContent = "❌ Error:\\n" + friendlyError(e);
+      }
+    };
+
+    hintBtn.onclick = () => {
+      const L = LEVELS[levelIndex];
+      if (hintsLeft <= 0) return;
+
+      hintsLeft--;
+      hintBtn.textContent = \`Hint (\${hintsLeft} left)\`;
+
+      if (shownHints < L.hints.length) {
+        const li = document.createElement("li");
+        li.textContent = L.hints[shownHints];
+        elHints.appendChild(li);
+        shownHints++;
+      } else {
+        const li = document.createElement("li");
+        li.textContent = "No more hint messages, but you still have hint credits.";
+        elHints.appendChild(li);
+      }
+    };
+
+    loadLevel(levelIndex);
+  </script>
+</body>
+</html>
