@@ -5,271 +5,645 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>PyQuest – Learn Python</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#0f172a; color:white; padding:20px; }
-    h1 { margin: 0 0 10px; }
-    .card { background:#111827; border:1px solid #334155; border-radius:14px; padding:14px; }
-    .prompt { margin-top:6px; padding:10px; background:#020617; border-radius:10px; }
-    textarea { width:100%; margin-top:12px; background:black; color:#22c55e; border-radius:10px; padding:10px; border:1px solid #334155; }
-    button { padding:10px 12px; border-radius:10px; border:0; cursor:pointer; background:#e5e7eb; }
-    button:disabled { opacity: .6; cursor: not-allowed; }
-    .primary { background:#38bdf8; }
-    .row { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
-    .right { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
-    .split { display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
-    pre { background:black; border:1px solid #334155; border-radius:10px; padding:10px; min-height:120px; white-space:pre-wrap; }
-    .label { font-size:12px; opacity:.7; margin-bottom:6px; }
-    ul { margin:0; padding-left:18px; }
-    .small { opacity: .85; margin: 6px 0 14px; }
-    @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+    :root{
+      --bg:#0f172a; --panel:#111827; --panel2:#020617; --border:#334155;
+      --txt:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; --good:#22c55e; --bad:#fb7185;
+    }
+    body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--txt); }
+    .wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    h1{ margin:0; font-size:26px; }
+    .nav{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn{ padding:10px 12px; border-radius:10px; border:0; cursor:pointer; background:#e5e7eb; color:#111; }
+    .btn.primary{ background:var(--accent); }
+    .btn.ghost{ background:transparent; border:1px solid var(--border); color:var(--txt); }
+    .btn:disabled{ opacity:.6; cursor:not-allowed; }
+    .card{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:14px; margin-top:12px; }
+    .story{ color:var(--muted); margin:6px 0 0; }
+    .prompt{ margin-top:10px; padding:10px; background:var(--panel2); border-radius:10px; border:1px solid var(--border); }
+    .row{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+    .right{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
+    textarea{ width:100%; margin-top:12px; background:black; color:var(--good); border-radius:10px; padding:10px; border:1px solid var(--border); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .split{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
+    .label{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+    pre{ background:black; border:1px solid var(--border); border-radius:10px; padding:10px; min-height:120px; white-space:pre-wrap; margin:0; }
+    ul{ margin:0; padding-left:18px; }
+    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--txt); background:rgba(255,255,255,0.03); }
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .badge{ display:inline-flex; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,0.03); }
+    .badge small{ color:var(--muted); }
+    .toast{
+      position: fixed; right: 16px; top: 16px; z-index: 9999;
+      min-width: 260px; max-width: 360px;
+      background: #0b1220; border:1px solid var(--border); border-radius:14px; padding:12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      display:none;
+    }
+    .toast .tTitle{ font-weight:700; }
+    .toast .tMsg{ color:var(--muted); margin-top:6px; }
+    .ok{ color: var(--good); }
+    .bad{ color: var(--bad); }
+    @media (max-width: 900px){ .split, .grid{ grid-template-columns: 1fr; } }
   </style>
 </head>
 
 <body>
-  <h1>🐍 PyQuest – Learn Python</h1>
-  <p class="small" id="story"></p>
-
-  <div class="card">
-    <div class="row">
-      <div>
-        <b id="levelTitle"></b>
-        <div id="prompt" class="prompt"></div>
+  <div class="wrap">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:28px;">🐍</div>
+        <div>
+          <h1>PyQuest – Learn Python</h1>
+          <div style="color:var(--muted);font-size:13px;">Story • Levels • Hints • EX Code • Achievements • Profile</div>
+        </div>
       </div>
-      <div class="right">
-        <button id="hintBtn">Hint</button>
-        <button id="exBtn">EX Code</button>
-        <button id="runBtn">Run</button>
-        <button id="submitBtn" class="primary">Submit</button>
+      <div class="nav">
+        <button class="btn ghost" id="navPlay">Play</button>
+        <button class="btn ghost" id="navProfile">Profile</button>
+        <button class="btn ghost" id="navReset">Reset</button>
       </div>
     </div>
 
-    <textarea id="code" rows="8"></textarea>
-
-    <div class="split">
-      <div>
-        <div class="label">Output</div>
-        <pre id="output"></pre>
+    <!-- PLAY -->
+    <div id="playView" class="card">
+      <div class="row">
+        <div>
+          <div class="pill">📍 <b id="levelTitle">Loading...</b></div>
+          <div class="story" id="story"></div>
+        </div>
+        <div class="right">
+          <span class="pill">⭐ XP: <b id="xp">0</b></span>
+          <span class="pill">🏅 Badges: <b id="badgeCount">0</b></span>
+          <span class="pill">✅ Solved: <b id="solvedCount">0</b></span>
+        </div>
       </div>
-      <div>
-        <div class="label">Hints</div>
-        <ul id="hints"></ul>
+
+      <div class="prompt" id="prompt"></div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="right" style="margin-left:auto;">
+          <button class="btn" id="hintBtn">Hint</button>
+          <button class="btn" id="exBtn">EX Code</button>
+          <button class="btn" id="runBtn">Run</button>
+          <button class="btn primary" id="submitBtn">Submit</button>
+        </div>
+      </div>
+
+      <textarea id="code" rows="9"></textarea>
+
+      <div class="split">
+        <div>
+          <div class="label">Output</div>
+          <pre id="output"></pre>
+        </div>
+        <div>
+          <div class="label">Hints</div>
+          <ul id="hints"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="profileView" class="card" style="display:none;">
+      <div class="row">
+        <div>
+          <div class="pill">👤 <b>Your Profile</b></div>
+          <div class="story">Progress is saved in this browser (no login needed).</div>
+        </div>
+        <div class="right">
+          <button class="btn ghost" id="backToPlay">Back to Play</button>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <div class="card" style="margin:0;">
+          <b>Stats</b>
+          <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <span class="pill">✅ Levels solved: <b id="pSolved">0</b></span>
+            <span class="pill">⭐ XP: <b id="pXp">0</b></span>
+            <span class="pill">💡 Hints used: <b id="pHints">0</b></span>
+            <span class="pill">🔥 Current level: <b id="pCurrent">1</b></span>
+          </div>
+        </div>
+
+        <div class="card" style="margin:0;">
+          <b>Recent solved levels</b>
+          <div class="story">Last 10 solved levels</div>
+          <div id="recentLevels" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <b>Achievements / Badges</b>
+        <div class="story">You’ll get popups when you unlock these.</div>
+        <div id="badgeList" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;"></div>
       </div>
     </div>
   </div>
 
-  <!-- Python in the browser -->
+  <!-- Achievement Popup -->
+  <div class="toast" id="toast">
+    <div class="tTitle" id="toastTitle">🏆 Achievement Unlocked!</div>
+    <div class="tMsg" id="toastMsg"></div>
+  </div>
+
+  <!-- Python engine -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 
   <script>
-    window.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("DOMContentLoaded", () => {
 
-      // ---------------- LEVELS (add more levels here) ----------------
-      const LEVELS = [
-        {
-          title: "LEVEL 1 – Vault Boot",
-          story: "You are locked inside a space vault. The console wants a boot message.",
-          prompt: "Print exactly: ACCESS GRANTED",
-          starter: "# Write your code here\n",
-          hintBudget: 10,
-          hints: [
-            "Use print()",
-            "Text must be in quotes",
-            "Example: print('HELLO')",
-            "No extra spaces",
-            "Exactly: ACCESS GRANTED"
-          ],
-          // EXAMPLE (NOT the answer)
-          exampleCode: "print(\"WELCOME USER\")",
-          expectedOutput: "ACCESS GRANTED"
-        },
-        {
-          title: "LEVEL 2 – Secret Code Variable",
-          story: "Nice! Now store the passcode in a variable and print it.",
-          prompt: "Create variable named code = 'OPEN' and print it",
-          starter: "# code = 'OPEN'\n# print(code)\n",
-          hintBudget: 10,
-          hints: [
-            "Variable name must be: code",
-            "Use: code = 'OPEN'",
-            "Then print(code)",
-            "Use quotes around OPEN",
-            "Only one print is enough"
-          ],
-          exampleCode: "msg = \"HELLO\"\nprint(msg)",
-          expectedOutput: "OPEN",
-          extraCheck: (py) => {
-            return Boolean(py.runPython("('code' in globals()) and (code == 'OPEN')"));
-          }
-        }
+    // -------------------- Storage --------------------
+    const STORE_KEY = "pyquest_v1_progress";
+
+    const defaultState = () => ({
+      xp: 0,
+      currentLevel: 1,
+      solvedLevels: [],      // array of numbers
+      badges: [],            // array of badge ids
+      hintsUsedTotal: 0,
+      perLevelHintsLeft: {}, // { [levelNum]: number }
+    });
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORE_KEY);
+        return raw ? JSON.parse(raw) : defaultState();
+      }catch{
+        return defaultState();
+      }
+    }
+    function saveState(){
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    let state = loadState();
+
+    // -------------------- UI Elements --------------------
+    const playView = document.getElementById("playView");
+    const profileView = document.getElementById("profileView");
+
+    const navPlay = document.getElementById("navPlay");
+    const navProfile = document.getElementById("navProfile");
+    const navReset = document.getElementById("navReset");
+    const backToPlay = document.getElementById("backToPlay");
+
+    const levelTitle = document.getElementById("levelTitle");
+    const storyEl = document.getElementById("story");
+    const promptEl = document.getElementById("prompt");
+    const codeEl = document.getElementById("code");
+    const outputEl = document.getElementById("output");
+    const hintsEl = document.getElementById("hints");
+
+    const hintBtn = document.getElementById("hintBtn");
+    const exBtn = document.getElementById("exBtn");
+    const runBtn = document.getElementById("runBtn");
+    const submitBtn = document.getElementById("submitBtn");
+
+    const xpEl = document.getElementById("xp");
+    const badgeCountEl = document.getElementById("badgeCount");
+    const solvedCountEl = document.getElementById("solvedCount");
+
+    // Profile
+    const pSolved = document.getElementById("pSolved");
+    const pXp = document.getElementById("pXp");
+    const pHints = document.getElementById("pHints");
+    const pCurrent = document.getElementById("pCurrent");
+    const recentLevelsEl = document.getElementById("recentLevels");
+    const badgeListEl = document.getElementById("badgeList");
+
+    // Toast
+    const toast = document.getElementById("toast");
+    const toastTitle = document.getElementById("toastTitle");
+    const toastMsg = document.getElementById("toastMsg");
+    let toastTimer = null;
+
+    function showToast(title, msg){
+      toastTitle.textContent = title;
+      toastMsg.textContent = msg;
+      toast.style.display = "block";
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.style.display = "none"; }, 3500);
+    }
+
+    function setBusy(b){
+      runBtn.disabled = b;
+      submitBtn.disabled = b;
+      hintBtn.disabled = b;
+      exBtn.disabled = b;
+    }
+
+    // -------------------- Pyodide --------------------
+    let pyodide = null;
+
+    async function ensurePyodide(){
+      if(pyodide) return pyodide;
+      setBusy(true);
+      outputEl.textContent = "Loading Python engine...";
+      try{
+        pyodide = await loadPyodide();
+        outputEl.textContent = "Ready ✅";
+        return pyodide;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function resetStdout(py){
+      py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
+    }
+    function getStdout(py){
+      return String(py.runPython("sys.stdout.getvalue()"));
+    }
+
+    function normalizeOutput(s){
+      // IMPORTANT: makes checking friendly: ignores extra newlines/spaces
+      return String(s).replace(/\s+/g, " ").trim();
+    }
+
+    function friendlyError(e){
+      const msg = String(e?.message || e);
+      if(msg.includes("SyntaxError")) return msg + "\nTip: Check quotes/brackets/colons/indentation.";
+      if(msg.includes("NameError")) return msg + "\nTip: Define the variable before using it.";
+      if(msg.includes("IndentationError")) return msg + "\nTip: Python indentation matters.";
+      return msg;
+    }
+
+    // -------------------- Infinite Level Generator --------------------
+    // Level patterns rotate so it can go on forever.
+    function makeLevel(n){
+      const stage = (n - 1) % 6; // 0..5
+      const storyBase = [
+        "You are inside a space vault. Each program unlocks a door.",
+        "A robot friend needs your code to move forward.",
+        "The lab terminal asks for a correct program to continue.",
+        "A spaceship computer requests the next command sequence.",
+        "The dungeon gate opens only when Python answers correctly.",
+        "A hacker console demands a correct script to proceed."
       ];
 
-      // ---------------- State ----------------
-      let levelIndex = 0;
-      let hintsLeft = 0;
-      let shownHints = 0;
-      let pyodide = null;
-
-      // ---------------- Elements ----------------
-      const elStory = document.getElementById("story");
-      const elLevelTitle = document.getElementById("levelTitle");
-      const elPrompt = document.getElementById("prompt");
-      const elCode = document.getElementById("code");
-      const elOutput = document.getElementById("output");
-      const elHints = document.getElementById("hints");
-
-      const hintBtn = document.getElementById("hintBtn");
-      const exBtn = document.getElementById("exBtn");
-      const runBtn = document.getElementById("runBtn");
-      const submitBtn = document.getElementById("submitBtn");
-
-      // ---------------- Helpers ----------------
-      function setBusy(isBusy) {
-        runBtn.disabled = isBusy;
-        submitBtn.disabled = isBusy;
-        hintBtn.disabled = isBusy;
-        exBtn.disabled = isBusy;
+      // We keep each level simple for school practical.
+      // Each level returns: title, story, prompt, starter, hintBudget, hints, exampleCode, validator(userCode, py, out)
+      if(stage === 0){
+        const msg = (n % 2 === 0) ? "ACCESS GRANTED" : "HELLO PYQUEST";
+        return {
+          title: `LEVEL ${n} – Print Mission`,
+          story: storyBase[stage],
+          prompt: `Print exactly: ${msg}`,
+          starter: "# Use print()\n",
+          hintBudget: 10,
+          hints: ["Use print()", "Text must be in quotes", "No extra spaces", "Only one print line"],
+          exampleCode: `print("WELCOME USER")`,
+          validate: (py, out) => normalizeOutput(out) === msg
+        };
       }
 
-      function resetStdout(py) {
-        py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
+      if(stage === 1){
+        const word = (n % 3 === 0) ? "OPEN" : "START";
+        return {
+          title: `LEVEL ${n} – Variables`,
+          story: storyBase[stage],
+          prompt: `Create variable named code = "${word}" and print it`,
+          starter: "# code = \"...\"\n# print(code)\n",
+          hintBudget: 10,
+          hints: ["Variable name must be code", "Use quotes around text", "Then print(code)"],
+          exampleCode: `msg = "HELLO"\nprint(msg)`,
+          validate: (py, out) => {
+            const okVar = Boolean(py.runPython(`('code' in globals()) and (code == '${word}')`));
+            return okVar && normalizeOutput(out) === word;
+          }
+        };
       }
 
-      function getStdout(py) {
-        return String(py.runPython("sys.stdout.getvalue()"));
+      if(stage === 2){
+        const a = (n % 7) + 2; // 2..8
+        const b = (n % 5) + 1; // 1..5
+        const ans = String(a + b);
+        return {
+          title: `LEVEL ${n} – Math`,
+          story: storyBase[stage],
+          prompt: `Compute ${a} + ${b} and print the result`,
+          starter: `# print(${a} + ${b})\n`,
+          hintBudget: 10,
+          hints: ["Use + operator", "Use print()", "Answer should be a number"],
+          exampleCode: `x = 3\ny = 4\nprint(x + y)`,
+          validate: (py, out) => normalizeOutput(out) === ans
+        };
       }
 
-      function loadLevel(i) {
-        const L = LEVELS[i];
-
-        elLevelTitle.textContent = L.title;
-        elStory.textContent = L.story;
-        elPrompt.textContent = L.prompt;
-
-        elCode.value = L.starter;
-        elOutput.textContent = "";
-        elHints.innerHTML = "";
-
-        shownHints = 0;
-        hintsLeft = L.hintBudget;
-
-        hintBtn.textContent = `Hint (${hintsLeft} left)`;
-
-        // EX Code shows only after hints become 0 (fair rule)
-        exBtn.style.display = "none";
+      if(stage === 3){
+        const threshold = (n % 4) + 3; // 3..6
+        // Requirement: set x = threshold, if x > 4 print BIG else SMALL
+        return {
+          title: `LEVEL ${n} – If / Else`,
+          story: storyBase[stage],
+          prompt: `Set x = ${threshold}. If x > 4 print BIG else print SMALL`,
+          starter: "# x = ...\n# if ...:\n#   print(...)\n# else:\n#   print(...)\n",
+          hintBudget: 12,
+          hints: ["Use if/else", "Condition is x > 4", "Print BIG or SMALL exactly", "Indentation matters"],
+          exampleCode: `x = 2\nif x > 4:\n  print("BIG")\nelse:\n  print("SMALL")`,
+          validate: (py, out) => {
+            const expected = (threshold > 4) ? "BIG" : "SMALL";
+            const okX = Boolean(py.runPython(`('x' in globals()) and (x == ${threshold})`));
+            return okX && normalizeOutput(out) === expected;
+          }
+        };
       }
 
-      async function ensurePyodide() {
-        if (pyodide) return pyodide;
-        setBusy(true);
-        elOutput.textContent = "Loading Python engine...";
-        try {
-          pyodide = await loadPyodide();
-          elOutput.textContent = "Ready ✅";
-          return pyodide;
-        } finally {
-          setBusy(false);
-        }
+      if(stage === 4){
+        // Loop: print numbers 1..k each on new line (we normalize whitespace)
+        const k = (n % 5) + 3; // 3..7
+        const expected = Array.from({length:k}, (_,i)=>String(i+1)).join(" ");
+        return {
+          title: `LEVEL ${n} – Loops`,
+          story: storyBase[stage],
+          prompt: `Print numbers from 1 to ${k} (each on new line or space is OK)`,
+          starter: "# for i in range(...):\n#   print(i)\n",
+          hintBudget: 14,
+          hints: ["Use for loop", "Use range(1, k+1)", "Print i", "Indentation matters"],
+          exampleCode: `for i in range(1, 4):\n  print(i)`,
+          validate: (py, out) => normalizeOutput(out) === expected
+        };
       }
 
-      function friendlyError(e) {
-        const msg = String(e?.message || e);
-        if (msg.includes("SyntaxError")) return msg + "\nTip: Check quotes/brackets/colons/indentation.";
-        if (msg.includes("NameError")) return msg + "\nTip: Define the variable before using it.";
-        if (msg.includes("IndentationError")) return msg + "\nTip: Python indentation matters.";
-        return msg;
-      }
-
-      // ---------------- Buttons ----------------
-      runBtn.onclick = async () => {
-        const py = await ensurePyodide();
-        setBusy(true);
-        try {
-          resetStdout(py);
-          py.runPython(elCode.value);
-          elOutput.textContent = getStdout(py) || "(no output)";
-        } catch (e) {
-          elOutput.textContent = friendlyError(e);
-        } finally {
-          setBusy(false);
+      // stage === 5 -> Functions
+      const val = (n % 6) + 2; // 2..7
+      const expected = String(val * 2);
+      return {
+        title: `LEVEL ${n} – Functions`,
+        story: storyBase[5],
+        prompt: `Write function double(x) that returns x*2. Call it with ${val} and print result`,
+        starter: "# def double(x):\n#   return ...\n# print(double(...))\n",
+        hintBudget: 14,
+        hints: ["Define function double", "Return x*2", "Call double(val)", "Print the result"],
+        exampleCode: `def add1(x):\n  return x + 1\nprint(add1(5))`,
+        validate: (py, out) => {
+          const okFn = Boolean(py.runPython(`('double' in globals()) and callable(double)`));
+          if(!okFn) return false;
+          const okVal = Boolean(py.runPython(`double(${val}) == ${val*2}`));
+          return okVal && normalizeOutput(out) === expected;
         }
       };
+    }
 
-      submitBtn.onclick = async () => {
-        const py = await ensurePyodide();
-        const L = LEVELS[levelIndex];
+    // -------------------- Achievements / Badges --------------------
+    const BADGES = [
+      { id:"solve_1",  name:"First Step",        rule:(s)=> s.solvedLevels.length >= 1,   desc:"Complete 1 level" },
+      { id:"solve_5",  name:"Learner x5",        rule:(s)=> s.solvedLevels.length >= 5,   desc:"Complete 5 levels" },
+      { id:"solve_10", name:"Python Rookie",     rule:(s)=> s.solvedLevels.length >= 10,  desc:"Complete 10 levels" },
+      { id:"solve_20", name:"Python Explorer",   rule:(s)=> s.solvedLevels.length >= 20,  desc:"Complete 20 levels" },
+      { id:"solve_50", name:"Python Warrior",    rule:(s)=> s.solvedLevels.length >= 50,  desc:"Complete 50 levels" },
+      { id:"solve_100",name:"Python Legend",     rule:(s)=> s.solvedLevels.length >= 100, desc:"Complete 100 levels" },
+      { id:"no_hints_10", name:"No-Hints Hero",  rule:(s)=> s._noHints10 === true,        desc:"Complete 10 levels with 0 hints used in those levels" }
+    ];
 
-        setBusy(true);
-        try {
-          resetStdout(py);
-          py.runPython(elCode.value);
+    // Track “no hints” streak-like badge:
+    let noHintsCounter = 0;
 
-          const out = getStdout(py).trim();
-          const expected = String(L.expectedOutput).trim();
+    function awardBadgeIfNew(badgeId){
+      if(state.badges.includes(badgeId)) return false;
+      state.badges.push(badgeId);
+      saveState();
 
-          let pass = (out === expected);
+      const b = BADGES.find(x=>x.id===badgeId);
+      if(b){
+        showToast("🏆 Achievement Unlocked!", `${b.name} — ${b.desc}`);
+      } else {
+        showToast("🏆 Achievement Unlocked!", badgeId);
+      }
+      return true;
+    }
 
-          // Optional extra checks per level (like variable existence)
-          if (pass && typeof L.extraCheck === "function") {
-            pass = L.extraCheck(py);
+    function checkBadges(){
+      // compute special "no hints 10" based on noHintsCounter
+      state._noHints10 = (noHintsCounter >= 10);
+
+      for(const b of BADGES){
+        if(!state.badges.includes(b.id) && b.rule(state)){
+          awardBadgeIfNew(b.id);
+        }
+      }
+      // cleanup internal field
+      delete state._noHints10;
+      saveState();
+    }
+
+    // -------------------- Level / Hints State --------------------
+    let currentLevel = null;
+    let hintsLeft = 0;
+    let shownHints = 0;
+
+    function getHintsLeftForLevel(levelNum, budget){
+      const key = String(levelNum);
+      if(state.perLevelHintsLeft[key] === undefined){
+        state.perLevelHintsLeft[key] = budget;
+        saveState();
+      }
+      return state.perLevelHintsLeft[key];
+    }
+
+    function setHintsLeftForLevel(levelNum, value){
+      state.perLevelHintsLeft[String(levelNum)] = value;
+      saveState();
+    }
+
+    function loadLevel(levelNum){
+      currentLevel = makeLevel(levelNum);
+
+      levelTitle.textContent = currentLevel.title;
+      storyEl.textContent = currentLevel.story;
+      promptEl.textContent = currentLevel.prompt;
+
+      codeEl.value = currentLevel.starter;
+      outputEl.textContent = "";
+      hintsEl.innerHTML = "";
+      shownHints = 0;
+
+      hintsLeft = getHintsLeftForLevel(levelNum, currentLevel.hintBudget);
+      hintBtn.textContent = `Hint (${hintsLeft} left)`;
+
+      exBtn.style.display = "none"; // show only when hints are 0
+      updateTopStats();
+    }
+
+    function updateTopStats(){
+      xpEl.textContent = state.xp;
+      badgeCountEl.textContent = state.badges.length;
+      solvedCountEl.textContent = state.solvedLevels.length;
+    }
+
+    function updateProfile(){
+      pSolved.textContent = state.solvedLevels.length;
+      pXp.textContent = state.xp;
+      pHints.textContent = state.hintsUsedTotal;
+      pCurrent.textContent = state.currentLevel;
+
+      // recent solved levels
+      recentLevelsEl.innerHTML = "";
+      const recent = state.solvedLevels.slice(-10).reverse();
+      if(recent.length === 0){
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = "No levels solved yet";
+        recentLevelsEl.appendChild(span);
+      } else {
+        for(const lv of recent){
+          const span = document.createElement("span");
+          span.className = "pill";
+          span.textContent = "Level " + lv;
+          recentLevelsEl.appendChild(span);
+        }
+      }
+
+      // badge list
+      badgeListEl.innerHTML = "";
+      for(const b of BADGES){
+        const earned = state.badges.includes(b.id);
+        const div = document.createElement("div");
+        div.className = "badge";
+        div.innerHTML = `
+          <div style="font-size:20px;">${earned ? "🏅" : "🔒"}</div>
+          <div>
+            <div><b>${b.name}</b></div>
+            <small>${earned ? "Unlocked" : b.desc}</small>
+          </div>
+        `;
+        badgeListEl.appendChild(div);
+      }
+    }
+
+    // -------------------- Navigation --------------------
+    function showPlay(){
+      profileView.style.display = "none";
+      playView.style.display = "block";
+      updateTopStats();
+    }
+    function showProfile(){
+      playView.style.display = "none";
+      profileView.style.display = "block";
+      updateProfile();
+    }
+
+    navPlay.onclick = showPlay;
+    navProfile.onclick = showProfile;
+    backToPlay.onclick = showPlay;
+
+    navReset.onclick = () => {
+      const ok = confirm("Reset everything? (levels, badges, xp) This cannot be undone.");
+      if(!ok) return;
+      localStorage.removeItem(STORE_KEY);
+      state = defaultState();
+      noHintsCounter = 0;
+      saveState();
+      showToast("Reset done ✅", "Your progress was cleared.");
+      loadLevel(state.currentLevel);
+      showPlay();
+    };
+
+    // -------------------- Buttons: Run / Submit / Hint / EX --------------------
+    runBtn.onclick = async () => {
+      const py = await ensurePyodide();
+      setBusy(true);
+      try{
+        resetStdout(py);
+        py.runPython(codeEl.value);
+        const out = getStdout(py);
+        outputEl.textContent = out || "(no output)";
+      }catch(e){
+        outputEl.textContent = friendlyError(e);
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    submitBtn.onclick = async () => {
+      const py = await ensurePyodide();
+      setBusy(true);
+      try{
+        resetStdout(py);
+        py.runPython(codeEl.value);
+        const rawOut = getStdout(py);
+        const out = normalizeOutput(rawOut);
+
+        const passed = currentLevel.validate(py, rawOut);
+
+        if(passed){
+          // Mark solved only once
+          if(!state.solvedLevels.includes(state.currentLevel)){
+            state.solvedLevels.push(state.currentLevel);
           }
 
-          if (pass) {
-            alert("✅ Successfully completed " + L.title + "!");
-            levelIndex++;
+          // XP reward: base + bonus for unused hints
+          const bonus = Math.max(0, hintsLeft);
+          state.xp += 10 + bonus; // 10 base + bonus
 
-            if (levelIndex >= LEVELS.length) {
-              elOutput.textContent =
-                "🎉 You finished all levels!\n\n(Add more levels inside the LEVELS array.)";
-              return;
-            }
-
-            loadLevel(levelIndex);
+          // no-hints counter for badge
+          if(getHintsLeftForLevel(state.currentLevel, currentLevel.hintBudget) === currentLevel.hintBudget){
+            noHintsCounter++;
           } else {
-            elOutput.textContent =
-              "❌ Not correct yet.\n\nExpected: " + expected +
-              "\nGot: " + (out || "(no output)") +
-              "\n\nTip: Avoid extra spaces/new lines.";
+            noHintsCounter = 0;
           }
-        } catch (e) {
-          elOutput.textContent = "❌ Error:\n" + friendlyError(e);
-        } finally {
-          setBusy(false);
-        }
-      };
 
-      hintBtn.onclick = () => {
-        const L = LEVELS[levelIndex];
-        if (hintsLeft <= 0) return;
+          saveState();
 
-        hintsLeft--;
-        hintBtn.textContent = `Hint (${hintsLeft} left)`;
+          alert(`✅ Successfully completed LEVEL ${state.currentLevel}!`);
+          state.currentLevel += 1;
+          saveState();
 
-        const li = document.createElement("li");
-        li.textContent = L.hints[shownHints] || "No more hint messages, but you still have hint credits.";
-        elHints.appendChild(li);
-        shownHints++;
-
-        // When hints reach 0, show EX Code button
-        if (hintsLeft === 0) {
-          exBtn.style.display = "inline-block";
-        }
-      };
-
-      exBtn.onclick = () => {
-        const L = LEVELS[levelIndex];
-        if (!L.exampleCode) {
-          elOutput.textContent = "No example available for this level.";
-          return;
+          checkBadges();
+          loadLevel(state.currentLevel);
+          updateTopStats();
+        } else {
+          outputEl.textContent =
+            `❌ Not correct yet.\n\nYour Output:\n${normalizeOutput(rawOut) || "(no output)"}\n\nTip: Try again (extra spaces/new lines are ignored).`;
         }
 
-        elOutput.textContent =
-          "📘 EX CODE (similar example, NOT the answer):\n\n" +
-          L.exampleCode +
-          "\n\n⚠️ Now modify this code to solve the mission.";
-      };
+      }catch(e){
+        outputEl.textContent = "❌ Error:\n" + friendlyError(e);
+      } finally {
+        setBusy(false);
+      }
+    };
 
-      // Start at Level 1
-      loadLevel(levelIndex);
-    });
+    hintBtn.onclick = () => {
+      if(hintsLeft <= 0) return;
+
+      hintsLeft--;
+      setHintsLeftForLevel(state.currentLevel, hintsLeft);
+
+      state.hintsUsedTotal += 1;
+      saveState();
+
+      hintBtn.textContent = `Hint (${hintsLeft} left)`;
+
+      const hintText = currentLevel.hints[shownHints] || "Try breaking the problem into smaller steps.";
+      const li = document.createElement("li");
+      li.textContent = hintText;
+      hintsEl.appendChild(li);
+      shownHints++;
+
+      if(hintsLeft === 0){
+        exBtn.style.display = "inline-block";
+        showToast("📘 EX Code unlocked", "You used all hints. EX Code is now available.");
+      }
+
+      updateTopStats();
+    };
+
+    exBtn.onclick = () => {
+      outputEl.textContent =
+        "📘 EX CODE (similar example, NOT the answer):\n\n" +
+        (currentLevel.exampleCode || "No example available") +
+        "\n\n⚠️ Modify this code to solve the level.";
+    };
+
+    // -------------------- Start --------------------
+    updateTopStats();
+    loadLevel(state.currentLevel);
+    showPlay();
+    checkBadges(); // in case badges are already eligible
+
+  });
   </script>
 </body>
 </html>
