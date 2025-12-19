@@ -8,53 +8,71 @@
     :root{
       --bg:#0f172a; --panel:#111827; --panel2:#020617; --border:#334155;
       --txt:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8; --good:#22c55e; --bad:#fb7185;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
     }
+    *{ box-sizing:border-box; }
     body{ margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--txt); }
     .wrap{ max-width:1100px; margin:0 auto; padding:18px; }
     .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
     h1{ margin:0; font-size:26px; }
+    .sub{ color:var(--muted); font-size:13px; margin-top:2px; }
     .nav{ display:flex; gap:8px; flex-wrap:wrap; }
     .btn{ padding:10px 12px; border-radius:10px; border:0; cursor:pointer; background:#e5e7eb; color:#111; }
     .btn.primary{ background:var(--accent); }
     .btn.ghost{ background:transparent; border:1px solid var(--border); color:var(--txt); }
     .btn:disabled{ opacity:.6; cursor:not-allowed; }
     .card{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:14px; margin-top:12px; }
-    .story{ color:var(--muted); margin:6px 0 0; }
+    .story{ color:var(--muted); margin:6px 0 0; line-height:1.35; }
     .prompt{ margin-top:10px; padding:10px; background:var(--panel2); border-radius:10px; border:1px solid var(--border); }
     .row{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
     .right{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
-    textarea{ width:100%; margin-top:12px; background:black; color:var(--good); border-radius:10px; padding:10px; border:1px solid var(--border); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    textarea{
+      width:100%; margin-top:12px; background:black; color:var(--good);
+      border-radius:10px; padding:10px; border:1px solid var(--border);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
     .split{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px; }
     .label{ font-size:12px; color:var(--muted); margin-bottom:6px; }
-    pre{ background:black; border:1px solid var(--border); border-radius:10px; padding:10px; min-height:120px; white-space:pre-wrap; margin:0; }
+    pre{
+      background:black; border:1px solid var(--border); border-radius:10px;
+      padding:10px; min-height:120px; white-space:pre-wrap; margin:0;
+    }
     ul{ margin:0; padding-left:18px; }
-    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--txt); background:rgba(255,255,255,0.03); }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; padding:6px 10px;
+      border-radius:999px; border:1px solid var(--border); color:var(--txt);
+      background:rgba(255,255,255,0.03);
+    }
     .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    .badge{ display:inline-flex; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,0.03); }
+    .badge{
+      display:inline-flex; gap:8px; align-items:center; padding:8px 10px;
+      border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,0.03);
+    }
     .badge small{ color:var(--muted); }
     .toast{
       position: fixed; right: 16px; top: 16px; z-index: 9999;
       min-width: 260px; max-width: 360px;
       background: #0b1220; border:1px solid var(--border); border-radius:14px; padding:12px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      box-shadow: var(--shadow);
       display:none;
     }
     .toast .tTitle{ font-weight:700; }
-    .toast .tMsg{ color:var(--muted); margin-top:6px; }
+    .toast .tMsg{ color:var(--muted); margin-top:6px; white-space:pre-line; }
     .modalBackdrop{
       position:fixed; inset:0; background:rgba(0,0,0,.6);
       display:none; align-items:center; justify-content:center; z-index:9998;
     }
     .modal{
-      width:min(520px, 92vw);
+      width:min(560px, 92vw);
       background:#0b1220; border:1px solid var(--border); border-radius:16px; padding:14px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      box-shadow: var(--shadow);
     }
     input{
       width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
       background:#020617; color:var(--txt); outline:none;
     }
-    .help{ color:var(--muted); font-size:13px; margin-top:6px; }
+    .help{ color:var(--muted); font-size:13px; margin-top:6px; line-height:1.35; }
+    .danger{ color: var(--bad); }
     @media (max-width: 900px){ .split, .grid{ grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -66,10 +84,9 @@
         <div style="font-size:28px;">🐍</div>
         <div>
           <h1>PyQuest – Learn Python</h1>
-          <div style="color:var(--muted);font-size:13px;" id="welcomeLine"></div>
+          <div class="sub" id="welcomeLine">Loading…</div>
         </div>
       </div>
-
       <div class="nav">
         <button class="btn ghost" id="navPlay">Play</button>
         <button class="btn ghost" id="navProfile">Profile</button>
@@ -82,10 +99,11 @@
     <div id="playView" class="card">
       <div class="row">
         <div>
-          <div class="pill">📍 <b id="levelTitle">Loading...</b></div>
+          <div class="pill">📍 <b id="levelTitle">Loading…</b></div>
           <div class="story" id="story"></div>
         </div>
         <div class="right">
+          <span class="pill">🌍 Global visits: <b id="globalVisits">-</b></span>
           <span class="pill">⭐ XP: <b id="xp">0</b></span>
           <span class="pill">🏅 Badges: <b id="badgeCount">0</b></span>
           <span class="pill">✅ Solved: <b id="solvedCount">0</b></span>
@@ -122,7 +140,7 @@
       <div class="row">
         <div>
           <div class="pill">👤 <b id="profileName">Your Profile</b></div>
-          <div class="story">Saved in this browser (no login needed).</div>
+          <div class="story">Saved in this browser + synced online (Firebase).</div>
         </div>
         <div class="right">
           <button class="btn ghost" id="backToPlay">Back to Play</button>
@@ -149,18 +167,18 @@
 
       <div class="card" style="margin-top:12px;">
         <b>Achievements / Badges</b>
-        <div class="story">Popups appear when you unlock these.</div>
+        <div class="story">You’ll get popups when you unlock these.</div>
         <div id="badgeList" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;"></div>
       </div>
     </div>
 
-    <!-- DEV CTRL (only when ?dev=1 + PIN) -->
+    <!-- DEV CTRL -->
     <div id="devView" class="card" style="display:none;">
       <div class="row">
         <div>
           <div class="pill">🛠️ <b>Dev Control</b></div>
           <div class="story">
-            Static-site limitation: These stats are only from your browser unless you add a backend/analytics.
+            Admin login required. Here you can see global visits and search student profiles.
           </div>
         </div>
         <div class="right">
@@ -169,33 +187,48 @@
       </div>
 
       <div class="card" style="margin-top:12px;">
-        <b>Visits (THIS browser only)</b>
-        <div class="story">Counts page opens in your device/browser.</div>
-        <div style="margin-top:10px;">
-          <span class="pill">👀 Visits: <b id="devVisits">0</b></span>
+        <b>Admin Login</b>
+        <div class="help">Use the admin email/password you created in Firebase Authentication.</div>
+        <div style="margin-top:10px; display:grid; gap:8px;">
+          <input id="adminEmail" placeholder="Admin email">
+          <input id="adminPass" type="password" placeholder="Admin password">
+          <button class="btn primary" id="adminLoginBtn">Login</button>
+          <div class="help" id="adminStatus"></div>
         </div>
       </div>
 
       <div class="card" style="margin-top:12px;">
-        <b>Search profiles (THIS browser only)</b>
-        <div class="story">This demo searches profiles saved in your browser.</div>
+        <b>Global visits</b>
+        <div style="margin-top:10px;">
+          <span class="pill">🌍 Visits: <b id="devGlobalVisits">-</b></span>
+        </div>
+      </div>
 
+      <div class="card" style="margin-top:12px;">
+        <b>Search a student profile</b>
+        <div class="help">
+          Search by name (case-insensitive). It finds the latest synced profile for that name.
+        </div>
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-          <input id="devSearch" placeholder="Type a name..." style="flex:1; min-width:220px;">
+          <input id="devSearch" placeholder="Type name e.g., Rahul" style="flex:1; min-width:220px;">
           <button class="btn primary" id="devSearchBtn">Search</button>
         </div>
-
-        <pre id="devResult" style="margin-top:10px; min-height:80px;"></pre>
+        <pre id="devResult" style="margin-top:10px; min-height:120px;"></pre>
+        <div class="help">
+          If multiple students use the same name, you’ll see one of them (Firestore returns a set; we show the first).
+          If you want unique usernames, tell me and we’ll add it.
+        </div>
       </div>
     </div>
-
   </div>
 
-  <!-- Name Modal -->
+  <!-- NAME MODAL -->
   <div class="modalBackdrop" id="nameBackdrop">
     <div class="modal">
       <div style="font-size:18px; font-weight:700;">Welcome to PyQuest 👋</div>
-      <div class="help">Enter your name to start. This name will show in your profile.</div>
+      <div class="help">
+        Enter your name to start. This will be your profile name.
+      </div>
       <div style="margin-top:10px;">
         <input id="nameInput" maxlength="20" placeholder="Your name (e.g., Rahul)">
         <div class="help">Tip: Use your real name for school practical.</div>
@@ -206,85 +239,43 @@
     </div>
   </div>
 
-  <!-- Achievement Popup -->
+  <!-- ACHIEVEMENT POPUP -->
   <div class="toast" id="toast">
     <div class="tTitle" id="toastTitle">🏆 Achievement Unlocked!</div>
     <div class="tMsg" id="toastMsg"></div>
   </div>
 
-  <!-- Python engine -->
+  <!-- Python in browser -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 
-  <script>
-  window.addEventListener("DOMContentLoaded", () => {
+  <!-- Main App -->
+  <script type="module">
+    // ------------------ Firebase imports (CDN) ------------------
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, runTransaction, serverTimestamp,
+      collection, query, where, getDocs, limit
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import {
+      getAuth, signInAnonymously, signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-    // -------------------- IMPORTANT LIMITATION --------------------
-    // GitHub Pages has no server. So:
-    // - Name/profile is saved per visitor browser (localStorage).
-    // - "Visits" and "Search profiles" below are demo for YOUR browser only.
-    // For real visitors + real search across all users, you need Firebase/Supabase.
+    // ------------------ YOUR Firebase config ------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyADtZ0hjE0VUVVLnEJgqwOBJqokIbb0Lu0",
+      authDomain: "pyquest-6e039.firebaseapp.com",
+      projectId: "pyquest-6e039",
+      storageBucket: "pyquest-6e039.firebasestorage.app",
+      messagingSenderId: "427416463276",
+      appId: "1:427416463276:web:c56bdad1ef6eaf9a013c09",
+      measurementId: "G-TRRZWV6J0F"
+    };
 
-    // -------------------- DEV SETTINGS --------------------
-    const DEV_PIN = "78916"; // change this to your secret
-    const urlParams = new URLSearchParams(location.search);
-    const devRequested = (urlParams.get("dev") === "1"); // show Dev Ctrl only when site opened with ?dev=1
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    // -------------------- Storage --------------------
-    const STORE_KEY = "pyquest_v2_progress";
-    const VISITS_KEY = "pyquest_v2_visits";
-    const LOCAL_PROFILES_KEY = "pyquest_v2_profiles"; // demo only
-
-    const defaultState = () => ({
-      name: "",
-      xp: 0,
-      currentLevel: 1,
-      solvedLevels: [],
-      badges: [],
-      hintsUsedTotal: 0,
-      perLevelHintsLeft: {},
-    });
-
-    function loadState(){
-      try{
-        const raw = localStorage.getItem(STORE_KEY);
-        return raw ? JSON.parse(raw) : defaultState();
-      }catch{
-        return defaultState();
-      }
-    }
-    function saveState(){
-      localStorage.setItem(STORE_KEY, JSON.stringify(state));
-    }
-
-    let state = loadState();
-
-    // Count visits (THIS browser only)
-    const visits = (Number(localStorage.getItem(VISITS_KEY) || "0") + 1);
-    localStorage.setItem(VISITS_KEY, String(visits));
-
-    // Save local profiles list (demo only)
-    function saveLocalProfile(){
-      try{
-        const raw = localStorage.getItem(LOCAL_PROFILES_KEY);
-        const list = raw ? JSON.parse(raw) : [];
-        const existing = list.find(p => p.name?.toLowerCase() === state.name.toLowerCase());
-        const profile = {
-          name: state.name,
-          xp: state.xp,
-          solved: state.solvedLevels.length,
-          badges: state.badges.length,
-          currentLevel: state.currentLevel
-        };
-        if(existing){
-          Object.assign(existing, profile);
-        } else {
-          list.push(profile);
-        }
-        localStorage.setItem(LOCAL_PROFILES_KEY, JSON.stringify(list));
-      } catch {}
-    }
-
-    // -------------------- UI Elements --------------------
+    // ------------------ Elements ------------------
     const playView = document.getElementById("playView");
     const profileView = document.getElementById("profileView");
     const devView = document.getElementById("devView");
@@ -296,13 +287,8 @@
 
     const devBtn = document.getElementById("devBtn");
     const devClose = document.getElementById("devClose");
-    const devVisits = document.getElementById("devVisits");
-    const devSearch = document.getElementById("devSearch");
-    const devSearchBtn = document.getElementById("devSearchBtn");
-    const devResult = document.getElementById("devResult");
 
     const welcomeLine = document.getElementById("welcomeLine");
-    const profileName = document.getElementById("profileName");
 
     const levelTitle = document.getElementById("levelTitle");
     const storyEl = document.getElementById("story");
@@ -319,8 +305,10 @@
     const xpEl = document.getElementById("xp");
     const badgeCountEl = document.getElementById("badgeCount");
     const solvedCountEl = document.getElementById("solvedCount");
+    const globalVisitsEl = document.getElementById("globalVisits");
 
-    // Profile stats
+    // Profile
+    const profileNameEl = document.getElementById("profileName");
     const pSolved = document.getElementById("pSolved");
     const pXp = document.getElementById("pXp");
     const pHints = document.getElementById("pHints");
@@ -339,6 +327,17 @@
     const toastMsg = document.getElementById("toastMsg");
     let toastTimer = null;
 
+    // Dev ctrl
+    const adminEmail = document.getElementById("adminEmail");
+    const adminPass = document.getElementById("adminPass");
+    const adminLoginBtn = document.getElementById("adminLoginBtn");
+    const adminStatus = document.getElementById("adminStatus");
+    const devGlobalVisitsEl = document.getElementById("devGlobalVisits");
+    const devSearch = document.getElementById("devSearch");
+    const devSearchBtn = document.getElementById("devSearchBtn");
+    const devResult = document.getElementById("devResult");
+
+    // ------------------ Toast helpers ------------------
     function showToast(title, msg){
       toastTitle.textContent = title;
       toastMsg.textContent = msg;
@@ -347,29 +346,58 @@
       toastTimer = setTimeout(() => { toast.style.display = "none"; }, 3500);
     }
 
-    function setBusy(b){
-      runBtn.disabled = b;
-      submitBtn.disabled = b;
-      hintBtn.disabled = b;
-      exBtn.disabled = b;
+    // ------------------ Busy state ------------------
+    function setBusy(isBusy) {
+      runBtn.disabled = isBusy;
+      submitBtn.disabled = isBusy;
+      hintBtn.disabled = isBusy;
+      exBtn.disabled = isBusy;
     }
 
-    // -------------------- Name flow --------------------
+    // ------------------ Local storage state ------------------
+    const STORE_KEY = "pyquest_merged_v1_progress";
+    const defaultState = () => ({
+      name: "",
+      xp: 0,
+      currentLevel: 1,
+      solvedLevels: [],
+      badges: [],
+      hintsUsedTotal: 0,
+      perLevelHintsLeft: {},
+    });
+
+    let state = loadState();
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORE_KEY);
+        return raw ? JSON.parse(raw) : defaultState();
+      }catch{
+        return defaultState();
+      }
+    }
+
+    function saveState(){
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+
+    // ------------------ Name flow ------------------
     function setWelcome(){
       const nm = state.name ? state.name : "Student";
-      welcomeLine.textContent = `Hi ${nm}! Solve levels and unlock badges.`;
-      profileName.textContent = `${nm}'s Profile`;
+      welcomeLine.textContent = `Hi ${nm}! Solve levels, earn badges, and learn Python — in story mode.`;
+      profileNameEl.textContent = `${nm}'s Profile`;
     }
 
     function showNameModal(){
       nameBackdrop.style.display = "flex";
       setTimeout(() => nameInput.focus(), 50);
     }
+
     function hideNameModal(){
       nameBackdrop.style.display = "none";
     }
 
-    saveNameBtn.onclick = () => {
+    saveNameBtn.onclick = async () => {
       const nm = (nameInput.value || "").trim();
       if(!nm){
         alert("Please enter your name.");
@@ -378,232 +406,14 @@
       state.name = nm;
       saveState();
       setWelcome();
-      saveLocalProfile();
       hideNameModal();
+
+      // ensure auth then sync profile
+      await ensureAnonAuth();
+      await syncProfileToFirebase();
     };
 
-    if(!state.name){
-      showNameModal();
-    } else {
-      setWelcome();
-    }
-
-    // -------------------- Pyodide --------------------
-    let pyodide = null;
-
-    async function ensurePyodide(){
-      if(pyodide) return pyodide;
-      setBusy(true);
-      outputEl.textContent = "Loading Python engine...";
-      try{
-        pyodide = await loadPyodide();
-        outputEl.textContent = "Ready ✅";
-        return pyodide;
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    function resetStdout(py){
-      py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
-    }
-    function getStdout(py){
-      return String(py.runPython("sys.stdout.getvalue()"));
-    }
-    function normalizeOutput(s){
-      return String(s).replace(/\s+/g, " ").trim();
-    }
-    function friendlyError(e){
-      const msg = String(e?.message || e);
-      if(msg.includes("SyntaxError")) return msg + "\nTip: Check quotes/brackets/colons/indentation.";
-      if(msg.includes("NameError")) return msg + "\nTip: Define the variable before using it.";
-      if(msg.includes("IndentationError")) return msg + "\nTip: Python indentation matters.";
-      return msg;
-    }
-
-    // -------------------- Infinite Level Generator --------------------
-    function makeLevel(n){
-      const stage = (n - 1) % 6;
-      const storyBase = [
-        "You are inside a space vault. Each program unlocks a door.",
-        "A robot friend needs your code to move forward.",
-        "The lab terminal asks for a correct program to continue.",
-        "A spaceship computer requests the next command sequence.",
-        "The dungeon gate opens only when Python answers correctly.",
-        "A hacker console demands a correct script to proceed."
-      ];
-
-      if(stage === 0){
-        const msg = (n % 2 === 0) ? "ACCESS GRANTED" : "HELLO PYQUEST";
-        return {
-          title: `LEVEL ${n} – Print Mission`,
-          story: storyBase[stage],
-          prompt: `Print exactly: ${msg}`,
-          starter: "# Use print()\n",
-          hintBudget: 10,
-          hints: ["Use print()", "Text must be in quotes", "No extra spaces", "Only one print line"],
-          exampleCode: `print("WELCOME USER")`,
-          validate: (py, out) => normalizeOutput(out) === msg
-        };
-      }
-
-      if(stage === 1){
-        const word = (n % 3 === 0) ? "OPEN" : "START";
-        return {
-          title: `LEVEL ${n} – Variables`,
-          story: storyBase[stage],
-          prompt: `Create variable named code = "${word}" and print it`,
-          starter: "# code = \"...\"\n# print(code)\n",
-          hintBudget: 10,
-          hints: ["Variable name must be code", "Use quotes", "Then print(code)"],
-          exampleCode: `msg = "HELLO"\nprint(msg)`,
-          validate: (py, out) => {
-            const okVar = Boolean(py.runPython(`('code' in globals()) and (code == '${word}')`));
-            return okVar && normalizeOutput(out) === word;
-          }
-        };
-      }
-
-      if(stage === 2){
-        const a = (n % 7) + 2;
-        const b = (n % 5) + 1;
-        const ans = String(a + b);
-        return {
-          title: `LEVEL ${n} – Math`,
-          story: storyBase[stage],
-          prompt: `Compute ${a} + ${b} and print the result`,
-          starter: `# print(${a} + ${b})\n`,
-          hintBudget: 10,
-          hints: ["Use + operator", "Use print()", "Answer is a number"],
-          exampleCode: `x = 3\ny = 4\nprint(x + y)`,
-          validate: (py, out) => normalizeOutput(out) === ans
-        };
-      }
-
-      if(stage === 3){
-        const threshold = (n % 4) + 3;
-        return {
-          title: `LEVEL ${n} – If / Else`,
-          story: storyBase[stage],
-          prompt: `Set x = ${threshold}. If x > 4 print BIG else print SMALL`,
-          starter: "# x = ...\n# if ...:\n#   print(...)\n# else:\n#   print(...)\n",
-          hintBudget: 12,
-          hints: ["Use if/else", "Condition: x > 4", "Print BIG or SMALL exactly", "Indentation matters"],
-          exampleCode: `x = 2\nif x > 4:\n  print("BIG")\nelse:\n  print("SMALL")`,
-          validate: (py, out) => {
-            const expected = (threshold > 4) ? "BIG" : "SMALL";
-            const okX = Boolean(py.runPython(`('x' in globals()) and (x == ${threshold})`));
-            return okX && normalizeOutput(out) === expected;
-          }
-        };
-      }
-
-      if(stage === 4){
-        const k = (n % 5) + 3;
-        const expected = Array.from({length:k}, (_,i)=>String(i+1)).join(" ");
-        return {
-          title: `LEVEL ${n} – Loops`,
-          story: storyBase[stage],
-          prompt: `Print numbers from 1 to ${k} (new line or space OK)`,
-          starter: "# for i in range(...):\n#   print(i)\n",
-          hintBudget: 14,
-          hints: ["Use for loop", "Use range(1, k+1)", "Print i", "Indentation matters"],
-          exampleCode: `for i in range(1, 4):\n  print(i)`,
-          validate: (py, out) => normalizeOutput(out) === expected
-        };
-      }
-
-      const val = (n % 6) + 2;
-      const expected = String(val * 2);
-      return {
-        title: `LEVEL ${n} – Functions`,
-        story: storyBase[5],
-        prompt: `Write function double(x) returns x*2. Call with ${val} and print result`,
-        starter: "# def double(x):\n#   return ...\n# print(double(...))\n",
-        hintBudget: 14,
-        hints: ["Define function double", "Return x*2", "Call double(val)", "Print the result"],
-        exampleCode: `def add1(x):\n  return x + 1\nprint(add1(5))`,
-        validate: (py, out) => {
-          const okFn = Boolean(py.runPython(`('double' in globals()) and callable(double)`));
-          if(!okFn) return false;
-          const okVal = Boolean(py.runPython(`double(${val}) == ${val*2}`));
-          return okVal && normalizeOutput(out) === expected;
-        }
-      };
-    }
-
-    // -------------------- Badges --------------------
-    const BADGES = [
-      { id:"solve_1",  name:"First Step",      rule:(s)=> s.solvedLevels.length >= 1,   desc:"Complete 1 level" },
-      { id:"solve_10", name:"Python Rookie",   rule:(s)=> s.solvedLevels.length >= 10,  desc:"Complete 10 levels" },
-      { id:"solve_25", name:"Python Builder",  rule:(s)=> s.solvedLevels.length >= 25,  desc:"Complete 25 levels" },
-      { id:"solve_50", name:"Python Warrior",  rule:(s)=> s.solvedLevels.length >= 50,  desc:"Complete 50 levels" },
-      { id:"solve_100",name:"Python Legend",   rule:(s)=> s.solvedLevels.length >= 100, desc:"Complete 100 levels" }
-    ];
-
-    function awardBadgeIfNew(badgeId){
-      if(state.badges.includes(badgeId)) return false;
-      state.badges.push(badgeId);
-      saveState();
-      const b = BADGES.find(x=>x.id===badgeId);
-      if(b) showToast("🏆 Achievement Unlocked!", `${b.name} — ${b.desc}`);
-      return true;
-    }
-
-    function checkBadges(){
-      for(const b of BADGES){
-        if(!state.badges.includes(b.id) && b.rule(state)){
-          awardBadgeIfNew(b.id);
-        }
-      }
-      saveState();
-    }
-
-    // -------------------- Level / Hints --------------------
-    let currentLevel = null;
-    let hintsLeft = 0;
-    let shownHints = 0;
-
-    function getHintsLeftForLevel(levelNum, budget){
-      const key = String(levelNum);
-      if(state.perLevelHintsLeft[key] === undefined){
-        state.perLevelHintsLeft[key] = budget;
-        saveState();
-      }
-      return state.perLevelHintsLeft[key];
-    }
-
-    function setHintsLeftForLevel(levelNum, value){
-      state.perLevelHintsLeft[String(levelNum)] = value;
-      saveState();
-    }
-
-    function updateTopStats(){
-      xpEl.textContent = state.xp;
-      badgeCountEl.textContent = state.badges.length;
-      solvedCountEl.textContent = state.solvedLevels.length;
-    }
-
-    function loadLevel(levelNum){
-      currentLevel = makeLevel(levelNum);
-      levelTitle.textContent = currentLevel.title;
-      storyEl.textContent = currentLevel.story;
-      promptEl.textContent = currentLevel.prompt;
-
-      codeEl.value = currentLevel.starter;
-      outputEl.textContent = "";
-      hintsEl.innerHTML = "";
-      shownHints = 0;
-
-      hintsLeft = getHintsLeftForLevel(levelNum, currentLevel.hintBudget);
-      hintBtn.textContent = `Hint (${hintsLeft} left)`;
-
-      exBtn.style.display = "none";
-      updateTopStats();
-      saveLocalProfile();
-    }
-
-    // -------------------- Views --------------------
+    // ------------------ Views ------------------
     function showPlay(){
       profileView.style.display = "none";
       devView.style.display = "none";
@@ -622,8 +432,8 @@
       playView.style.display = "none";
       profileView.style.display = "none";
       devView.style.display = "block";
-      devVisits.textContent = String(visits);
-      devResult.textContent = "Type a name and press Search.";
+      adminStatus.textContent = "Please login to use Dev Ctrl.";
+      devResult.textContent = "Login first, then search a name.";
     }
 
     navPlay.onclick = showPlay;
@@ -631,113 +441,262 @@
     backToPlay.onclick = showPlay;
     devClose.onclick = showPlay;
 
-    navReset.onclick = () => {
-      const ok = confirm("Reset everything? (name, levels, badges, xp) This cannot be undone.");
+    navReset.onclick = async () => {
+      const ok = confirm("Reset everything? (name, levels, badges, xp). This cannot be undone.");
       if(!ok) return;
       localStorage.removeItem(STORE_KEY);
       state = defaultState();
       saveState();
       showToast("Reset done ✅", "Your progress was cleared.");
+
+      // keep global visits as-is; only reset local progress
+      setWelcome();
       showNameModal();
       loadLevel(state.currentLevel);
       showPlay();
+
+      // sync blank-ish profile only if has name later
     };
 
-    // -------------------- Run / Submit / Hint / EX --------------------
-    runBtn.onclick = async () => {
-      const py = await ensurePyodide();
+    // ------------------ Pyodide ------------------
+    let pyodide = null;
+
+    async function ensurePyodide(){
+      if(pyodide) return pyodide;
       setBusy(true);
+      outputEl.textContent = "Loading Python engine...";
       try{
-        resetStdout(py);
-        py.runPython(codeEl.value);
-        const out = getStdout(py);
-        outputEl.textContent = out || "(no output)";
-      }catch(e){
-        outputEl.textContent = friendlyError(e);
+        pyodide = await loadPyodide();
+        outputEl.textContent = "Ready ✅";
+        return pyodide;
       } finally {
         setBusy(false);
       }
-    };
+    }
 
-    submitBtn.onclick = async () => {
-      const py = await ensurePyodide();
-      setBusy(true);
-      try{
-        resetStdout(py);
-        py.runPython(codeEl.value);
-        const rawOut = getStdout(py);
-        const passed = currentLevel.validate(py, rawOut);
+    function resetStdout(py){
+      py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
+    }
 
-        if(passed){
-          if(!state.solvedLevels.includes(state.currentLevel)){
-            state.solvedLevels.push(state.currentLevel);
+    function getStdout(py){
+      return String(py.runPython("sys.stdout.getvalue()"));
+    }
+
+    function normalizeOutput(s){
+      // friendly output compare: ignore extra whitespace/newlines
+      return String(s).replace(/\s+/g, " ").trim();
+    }
+
+    function friendlyError(e){
+      const msg = String(e?.message || e);
+      if(msg.includes("SyntaxError")) return msg + "\nTip: Check quotes/brackets/colons/indentation.";
+      if(msg.includes("NameError")) return msg + "\nTip: Define the variable before using it.";
+      if(msg.includes("IndentationError")) return msg + "\nTip: Python indentation matters.";
+      return msg;
+    }
+
+    // ------------------ Infinite level generator ------------------
+    function makeLevel(n){
+      const stage = (n - 1) % 6; // 0..5
+      const storyBase = [
+        "You are locked inside a space vault. Each correct program unlocks a door.",
+        "A robot friend needs your code to move forward through the maze.",
+        "The lab terminal demands a correct script to continue the experiment.",
+        "A spaceship computer requests the next command sequence.",
+        "The dungeon gate opens only when Python answers correctly.",
+        "A hacker console demands a correct script to proceed."
+      ];
+
+      if(stage === 0){
+        const msg = (n % 2 === 0) ? "ACCESS GRANTED" : "HELLO PYQUEST";
+        return {
+          title: `LEVEL ${n} – Print Mission`,
+          story: storyBase[stage],
+          prompt: `Print exactly: ${msg}`,
+          starter: "# Use print()\n",
+          hintBudget: 10,
+          hints: ["Use print()", "Text must be in quotes", "No extra spaces", "Only one print line"],
+          exampleCode: `print("WELCOME USER")`,
+          validate: (py, rawOut) => normalizeOutput(rawOut) === msg
+        };
+      }
+
+      if(stage === 1){
+        const word = (n % 3 === 0) ? "OPEN" : "START";
+        return {
+          title: `LEVEL ${n} – Variables`,
+          story: storyBase[stage],
+          prompt: `Create variable named code = "${word}" and print it`,
+          starter: "# code = \"...\"\n# print(code)\n",
+          hintBudget: 10,
+          hints: ["Variable name must be code", "Use quotes around text", "Then print(code)"],
+          exampleCode: `msg = "HELLO"\nprint(msg)`,
+          validate: (py, rawOut) => {
+            const okVar = Boolean(py.runPython(`('code' in globals()) and (code == '${word}')`));
+            return okVar && normalizeOutput(rawOut) === word;
           }
-
-          const bonus = Math.max(0, hintsLeft);
-          state.xp += 10 + bonus;
-          saveState();
-
-          alert(`✅ Successfully completed LEVEL ${state.currentLevel}!`);
-          state.currentLevel += 1;
-          saveState();
-
-          checkBadges();
-          loadLevel(state.currentLevel);
-          updateTopStats();
-          saveLocalProfile();
-        } else {
-          outputEl.textContent =
-            `❌ Not correct yet.\n\nYour Output:\n${normalizeOutput(rawOut) || "(no output)"}\n\nTip: Try again.`;
-        }
-
-      }catch(e){
-        outputEl.textContent = "❌ Error:\n" + friendlyError(e);
-      } finally {
-        setBusy(false);
+        };
       }
-    };
 
-    hintBtn.onclick = () => {
-      if(hintsLeft <= 0) return;
+      if(stage === 2){
+        const a = (n % 7) + 2; // 2..8
+        const b = (n % 5) + 1; // 1..5
+        const ans = String(a + b);
+        return {
+          title: `LEVEL ${n} – Math`,
+          story: storyBase[stage],
+          prompt: `Compute ${a} + ${b} and print the result`,
+          starter: `# print(${a} + ${b})\n`,
+          hintBudget: 10,
+          hints: ["Use + operator", "Use print()", "Answer should be a number"],
+          exampleCode: `x = 3\ny = 4\nprint(x + y)`,
+          validate: (py, rawOut) => normalizeOutput(rawOut) === ans
+        };
+      }
 
-      hintsLeft--;
-      setHintsLeftForLevel(state.currentLevel, hintsLeft);
+      if(stage === 3){
+        const threshold = (n % 4) + 3; // 3..6
+        return {
+          title: `LEVEL ${n} – If / Else`,
+          story: storyBase[stage],
+          prompt: `Set x = ${threshold}. If x > 4 print BIG else print SMALL`,
+          starter: "# x = ...\n# if ...:\n#   print(...)\n# else:\n#   print(...)\n",
+          hintBudget: 12,
+          hints: ["Use if/else", "Condition is x > 4", "Print BIG or SMALL exactly", "Indentation matters"],
+          exampleCode: `x = 2\nif x > 4:\n  print("BIG")\nelse:\n  print("SMALL")`,
+          validate: (py, rawOut) => {
+            const expected = (threshold > 4) ? "BIG" : "SMALL";
+            const okX = Boolean(py.runPython(`('x' in globals()) and (x == ${threshold})`));
+            return okX && normalizeOutput(rawOut) === expected;
+          }
+        };
+      }
 
-      state.hintsUsedTotal += 1;
+      if(stage === 4){
+        const k = (n % 5) + 3; // 3..7
+        const expected = Array.from({length:k}, (_,i)=>String(i+1)).join(" ");
+        return {
+          title: `LEVEL ${n} – Loops`,
+          story: storyBase[stage],
+          prompt: `Print numbers from 1 to ${k} (each on new line OR spaces are OK)`,
+          starter: "# for i in range(...):\n#   print(i)\n",
+          hintBudget: 14,
+          hints: ["Use for loop", "Use range(1, k+1)", "Print i", "Indentation matters"],
+          exampleCode: `for i in range(1, 4):\n  print(i)`,
+          validate: (py, rawOut) => normalizeOutput(rawOut) === expected
+        };
+      }
+
+      // stage 5 functions
+      const val = (n % 6) + 2; // 2..7
+      const expected = String(val * 2);
+      return {
+        title: `LEVEL ${n} – Functions`,
+        story: storyBase[5],
+        prompt: `Write function double(x) that returns x*2. Call it with ${val} and print result`,
+        starter: "# def double(x):\n#   return ...\n# print(double(...))\n",
+        hintBudget: 14,
+        hints: ["Define function double", "Return x*2", "Call double(val)", "Print the result"],
+        exampleCode: `def add1(x):\n  return x + 1\nprint(add1(5))`,
+        validate: (py, rawOut) => {
+          const okFn = Boolean(py.runPython(`('double' in globals()) and callable(double)`));
+          if(!okFn) return false;
+          const okVal = Boolean(py.runPython(`double(${val}) == ${val*2}`));
+          return okVal && normalizeOutput(rawOut) === expected;
+        }
+      };
+    }
+
+    // ------------------ Badges / Achievements ------------------
+    // Simple + strong milestones (you can add more later)
+    const BADGES = [
+      { id:"solve_1",   name:"First Step",        desc:"Complete 1 level",   rule:(s)=> s.solvedLevels.length >= 1 },
+      { id:"solve_5",   name:"Learner x5",        desc:"Complete 5 levels",  rule:(s)=> s.solvedLevels.length >= 5 },
+      { id:"solve_10",  name:"Python Rookie",     desc:"Complete 10 levels", rule:(s)=> s.solvedLevels.length >= 10 },
+      { id:"solve_20",  name:"Python Explorer",   desc:"Complete 20 levels", rule:(s)=> s.solvedLevels.length >= 20 },
+      { id:"solve_50",  name:"Python Warrior",    desc:"Complete 50 levels", rule:(s)=> s.solvedLevels.length >= 50 },
+      { id:"solve_100", name:"Python Legend",     desc:"Complete 100 levels",rule:(s)=> s.solvedLevels.length >= 100 },
+    ];
+
+    function awardBadgeIfNew(badgeId){
+      if(state.badges.includes(badgeId)) return false;
+      state.badges.push(badgeId);
       saveState();
+      const b = BADGES.find(x=>x.id===badgeId);
+      if(b){
+        showToast("🏆 Achievement Unlocked!", `${b.name}\n${b.desc}`);
+      } else {
+        showToast("🏆 Achievement Unlocked!", badgeId);
+      }
+      return true;
+    }
 
+    function checkBadges(){
+      for(const b of BADGES){
+        if(!state.badges.includes(b.id) && b.rule(state)){
+          awardBadgeIfNew(b.id);
+        }
+      }
+      saveState();
+    }
+
+    // ------------------ Level + hints state ------------------
+    let currentLevel = null;
+    let hintsLeft = 0;
+    let shownHints = 0;
+
+    function getHintsLeftForLevel(levelNum, budget){
+      const key = String(levelNum);
+      if(state.perLevelHintsLeft[key] === undefined){
+        state.perLevelHintsLeft[key] = budget;
+        saveState();
+      }
+      return state.perLevelHintsLeft[key];
+    }
+
+    function setHintsLeftForLevel(levelNum, value){
+      state.perLevelHintsLeft[String(levelNum)] = value;
+      saveState();
+    }
+
+    function loadLevel(levelNum){
+      currentLevel = makeLevel(levelNum);
+
+      levelTitle.textContent = currentLevel.title;
+      storyEl.textContent = currentLevel.story;
+      promptEl.textContent = currentLevel.prompt;
+
+      codeEl.value = currentLevel.starter;
+      outputEl.textContent = "";
+      hintsEl.innerHTML = "";
+
+      shownHints = 0;
+      hintsLeft = getHintsLeftForLevel(levelNum, currentLevel.hintBudget);
       hintBtn.textContent = `Hint (${hintsLeft} left)`;
 
-      const hintText = currentLevel.hints[shownHints] || "Try breaking the problem into small steps.";
-      const li = document.createElement("li");
-      li.textContent = hintText;
-      hintsEl.appendChild(li);
-      shownHints++;
-
-      if(hintsLeft === 0){
-        exBtn.style.display = "inline-block";
-        showToast("📘 EX Code unlocked", "You used all hints. EX Code is now available.");
-      }
+      // EX button unlock rule:
+      // - visible ONLY when hintsLeft becomes 0
+      exBtn.style.display = "none";
 
       updateTopStats();
-      saveLocalProfile();
-    };
+    }
 
-    exBtn.onclick = () => {
-      outputEl.textContent =
-        "📘 EX CODE (similar example, NOT the answer):\n\n" +
-        (currentLevel.exampleCode || "No example available") +
-        "\n\n⚠️ Modify this to solve the level.";
-    };
+    // ------------------ UI updates ------------------
+    function updateTopStats(){
+      xpEl.textContent = state.xp;
+      badgeCountEl.textContent = state.badges.length;
+      solvedCountEl.textContent = state.solvedLevels.length;
+    }
 
-    // -------------------- Profile Rendering --------------------
     function updateProfile(){
       setWelcome();
+
       pSolved.textContent = state.solvedLevels.length;
       pXp.textContent = state.xp;
       pHints.textContent = state.hintsUsedTotal;
       pCurrent.textContent = state.currentLevel;
 
+      // recent levels
       recentLevelsEl.innerHTML = "";
       const recent = state.solvedLevels.slice(-10).reverse();
       if(recent.length === 0){
@@ -754,6 +713,7 @@
         }
       }
 
+      // badges list
       badgeListEl.innerHTML = "";
       for(const b of BADGES){
         const earned = state.badges.includes(b.id);
@@ -770,54 +730,263 @@
       }
     }
 
-    // -------------------- Dev Ctrl --------------------
+    // ------------------ Buttons: Hint / EX / Run / Submit ------------------
+    hintBtn.onclick = () => {
+      const L = currentLevel;
+      if(hintsLeft <= 0) return;
+
+      hintsLeft--;
+      setHintsLeftForLevel(state.currentLevel, hintsLeft);
+
+      state.hintsUsedTotal += 1;
+      saveState();
+
+      hintBtn.textContent = `Hint (${hintsLeft} left)`;
+
+      const li = document.createElement("li");
+      li.textContent = L.hints[shownHints] || "Try breaking the problem into smaller steps.";
+      hintsEl.appendChild(li);
+      shownHints++;
+
+      if(hintsLeft === 0){
+        exBtn.style.display = "inline-block";
+        showToast("📘 EX Code unlocked", "You used all hints.\nEX Code is now available.");
+      }
+
+      updateTopStats();
+      // sync profile (optional, but nice)
+      syncProfileToFirebase().catch(()=>{});
+    };
+
+    exBtn.onclick = () => {
+      const L = currentLevel;
+      outputEl.textContent =
+        "📘 EX CODE (similar example, NOT the answer):\n\n" +
+        (L.exampleCode || "No example available") +
+        "\n\n⚠️ Modify this code to solve the mission.";
+    };
+
+    runBtn.onclick = async () => {
+      const py = await ensurePyodide();
+      setBusy(true);
+      try{
+        resetStdout(py);
+        py.runPython(codeEl.value);
+        const out = getStdout(py);
+        outputEl.textContent = out || "(no output)";
+      }catch(e){
+        outputEl.textContent = friendlyError(e);
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    submitBtn.onclick = async () => {
+      // Must have name before playing seriously (school-friendly)
+      if(!state.name){
+        showNameModal();
+        return;
+      }
+
+      const py = await ensurePyodide();
+      setBusy(true);
+      try{
+        resetStdout(py);
+        py.runPython(codeEl.value);
+
+        const rawOut = getStdout(py);
+        const passed = currentLevel.validate(py, rawOut);
+
+        if(passed){
+          // mark solved only once
+          if(!state.solvedLevels.includes(state.currentLevel)){
+            state.solvedLevels.push(state.currentLevel);
+          }
+
+          // XP reward: base + bonus for unused hints
+          const bonus = Math.max(0, hintsLeft);
+          state.xp += 10 + bonus;
+
+          saveState();
+
+          alert(`✅ Successfully completed LEVEL ${state.currentLevel}!`);
+
+          state.currentLevel += 1;
+          saveState();
+
+          checkBadges();
+          updateTopStats();
+
+          // Sync profile to Firebase (global)
+          await ensureAnonAuth();
+          await syncProfileToFirebase();
+
+          loadLevel(state.currentLevel);
+        } else {
+          outputEl.textContent =
+            `❌ Not correct yet.\n\nYour Output:\n${normalizeOutput(rawOut) || "(no output)"}\n\nTip: Try again (extra spaces/new lines are ignored).`;
+        }
+
+      }catch(e){
+        outputEl.textContent = "❌ Error:\n" + friendlyError(e);
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    // ------------------ Firebase: auth + visits + profiles ------------------
+    let anonReady = false;
+
+    async function ensureAnonAuth(){
+      if(anonReady && auth.currentUser) return;
+      try{
+        await signInAnonymously(auth);
+        anonReady = true;
+      }catch(e){
+        // If admin is logged in, anonymous sign-in isn't needed
+        anonReady = true;
+      }
+    }
+
+    // Global visit count: increments on each page load.
+    // (If you want "count once per day per browser" to prevent refresh spam, tell me.)
+    async function incrementGlobalVisit(){
+      const statsRef = doc(db, "stats", "global");
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(statsRef);
+        const cur = snap.exists() ? (snap.data().visits || 0) : 0;
+        tx.set(statsRef, { visits: cur + 1, updatedAt: serverTimestamp() }, { merge:true });
+      });
+    }
+
+    async function readGlobalVisits(){
+      const statsRef = doc(db, "stats", "global");
+      const snap = await getDoc(statsRef);
+      const v = snap.exists() ? (snap.data().visits || 0) : 0;
+      globalVisitsEl.textContent = v;
+      devGlobalVisitsEl.textContent = v;
+    }
+
+    async function syncProfileToFirebase(){
+      // Save a searchable profile doc for admin search
+      if(!state.name) return;
+      const user = auth.currentUser;
+      if(!user) return;
+
+      const uid = user.uid;
+      const nameLower = state.name.toLowerCase();
+
+      const payload = {
+        name: state.name,
+        nameLower,
+        xp: state.xp,
+        solved: state.solvedLevels.length,
+        currentLevel: state.currentLevel,
+        badges: state.badges,
+        hintsUsed: state.hintsUsedTotal,
+        updatedAt: serverTimestamp(),
+      };
+
+      // Store in profiles_public for admin searching by nameLower
+      await setDoc(doc(db, "profiles_public", uid), payload, { merge:true });
+    }
+
+    // ------------------ Dev Ctrl (only when ?dev=1) ------------------
+    const urlParams = new URLSearchParams(location.search);
+    const devRequested = (urlParams.get("dev") === "1");
     if(devRequested){
       devBtn.style.display = "inline-block";
     }
 
-    devBtn.onclick = () => {
-      const pin = prompt("Enter Dev PIN:");
-      if(pin !== DEV_PIN){
-        alert("Wrong PIN");
-        return;
+    devBtn.onclick = () => showDev();
+
+    let isAdminLoggedIn = false;
+
+    adminLoginBtn.onclick = async () => {
+      adminStatus.textContent = "Logging in...";
+      try{
+        await signInWithEmailAndPassword(auth, (adminEmail.value || "").trim(), adminPass.value || "");
+        isAdminLoggedIn = true;
+        adminStatus.textContent = "✅ Admin logged in.";
+        await readGlobalVisits();
+      }catch(e){
+        isAdminLoggedIn = false;
+        adminStatus.textContent = "❌ Login failed: " + (e?.message || e);
       }
-      showDev();
     };
 
-    devSearchBtn.onclick = () => {
-      const q = (devSearch.value || "").trim().toLowerCase();
-      if(!q){
+    devSearchBtn.onclick = async () => {
+      if(!isAdminLoggedIn){
+        devResult.textContent = "❌ Please login as admin first.";
+        return;
+      }
+      const qName = (devSearch.value || "").trim();
+      if(!qName){
         devResult.textContent = "Type a name to search.";
         return;
       }
+
+      devResult.textContent = "Searching...";
       try{
-        const raw = localStorage.getItem(LOCAL_PROFILES_KEY);
-        const list = raw ? JSON.parse(raw) : [];
-        const found = list.find(p => (p.name || "").toLowerCase() === q);
-        if(!found){
-          devResult.textContent = "Not found in this browser.\n\n(Real global search needs Firebase/Supabase.)";
+        const qLower = qName.toLowerCase();
+        const colRef = collection(db, "profiles_public");
+        const qy = query(colRef, where("nameLower", "==", qLower), limit(5));
+        const snap = await getDocs(qy);
+
+        if(snap.empty){
+          devResult.textContent = "Not found.\n(Spelling must match the saved name.)";
           return;
         }
+
+        // show first result
+        const d = snap.docs[0].data();
         devResult.textContent =
-          `FOUND PROFILE (local demo)\n\n` +
-          `Name: ${found.name}\n` +
-          `Solved: ${found.solved}\n` +
-          `XP: ${found.xp}\n` +
-          `Badges: ${found.badges}\n` +
-          `Current Level: ${found.currentLevel}\n`;
-      } catch {
-        devResult.textContent = "Could not read local profiles.";
+          `FOUND PROFILE\n\n` +
+          `Name: ${d.name}\n` +
+          `Solved: ${d.solved}\n` +
+          `XP: ${d.xp}\n` +
+          `Current Level: ${d.currentLevel}\n` +
+          `Badges: ${(d.badges || []).join(", ") || "(none)"}\n` +
+          `Hints Used: ${d.hintsUsed ?? "-"}\n`;
+      } catch(e){
+        devResult.textContent = "Error: " + (e?.message || e);
       }
     };
 
-    // -------------------- Start --------------------
+    // ------------------ Init ------------------
+    setWelcome();
+
+    if(!state.name){
+      showNameModal();
+    }
+
+    // show initial stats
     updateTopStats();
     loadLevel(state.currentLevel);
-    showPlay();
-    checkBadges();
-    saveLocalProfile();
 
-  });
+    // views default
+    showPlay();
+
+    // Start Firebase flow:
+    // 1) anonymous sign-in
+    // 2) increment visits
+    // 3) read visits
+    // 4) sync profile if already has name
+    (async () => {
+      try{
+        await ensureAnonAuth();
+        await incrementGlobalVisit();
+        await readGlobalVisits();
+        if(state.name){
+          await syncProfileToFirebase();
+        }
+      }catch(e){
+        // If Firebase fails, game still works locally
+        globalVisitsEl.textContent = "offline";
+        console.warn("Firebase init error:", e);
+      }
+    })();
+
   </script>
 </body>
 </html>
