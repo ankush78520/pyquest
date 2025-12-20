@@ -72,8 +72,23 @@
       background:#020617; color:var(--txt); outline:none;
     }
     .help{ color:var(--muted); font-size:13px; margin-top:6px; line-height:1.35; }
-    .danger{ color: var(--bad); }
     @media (max-width: 900px){ .split, .grid{ grid-template-columns: 1fr; } }
+
+    /* 👑 Champion decoration */
+    .champBanner{
+      margin-top:12px;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(56,189,248,0.45);
+      background: radial-gradient(circle at 10% 10%, rgba(56,189,248,0.25), transparent 55%),
+                  radial-gradient(circle at 90% 30%, rgba(34,197,94,0.15), transparent 55%),
+                  rgba(255,255,255,0.03);
+      box-shadow: 0 0 22px rgba(56,189,248,0.15);
+    }
+    .champPill{
+      border-color: rgba(255, 215, 0, 0.6);
+      background: rgba(255, 215, 0, 0.08);
+    }
   </style>
 </head>
 
@@ -146,6 +161,20 @@
         <div class="right">
           <button class="btn ghost" id="backToPlay">Back to Play</button>
         </div>
+      </div>
+
+      <!-- 👑 Champion banner (hidden unless you are #1) -->
+      <div id="championBanner" class="champBanner" style="display:none;">
+        <div class="row">
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div class="pill champPill">👑 GLOBAL #1</div>
+            <div style="font-weight:700;">Champion of the Leaderboard</div>
+          </div>
+          <div class="right">
+            <span class="pill champPill">🏆 Special Decoration Active</span>
+          </div>
+        </div>
+        <div class="help">This decoration moves automatically to whoever is #1 right now.</div>
       </div>
 
       <div class="grid" style="margin-top:12px;">
@@ -228,7 +257,7 @@
       <div class="card" style="margin-top:12px;">
         <b>Search a student profile</b>
         <div class="help">
-          Search by name (case-insensitive). It finds the latest synced profile for that name.
+          Search by name (case-insensitive).
         </div>
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
           <input id="devSearch" placeholder="Type name e.g., Rahul" style="flex:1; min-width:220px;">
@@ -265,19 +294,16 @@
   <!-- Python in browser -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 
-  <!-- Main App -->
   <script type="module">
-    // ------------------ Firebase imports (CDN) ------------------
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import {
       getFirestore, doc, getDoc, setDoc, runTransaction, serverTimestamp,
       collection, query, where, getDocs, limit, orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-    import {
-      getAuth, signInAnonymously, signInWithEmailAndPassword
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import { getAuth, signInAnonymously, signInWithEmailAndPassword }
+      from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-    // ------------------ YOUR Firebase config ------------------
+    // 🔥 Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyADtZ0hjE0VUVVLnEJgqwOBJqokIbb0Lu0",
       authDomain: "pyquest-6e039.firebaseapp.com",
@@ -292,7 +318,7 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // ------------------ Elements ------------------
+    // Elements
     const playView = document.getElementById("playView");
     const profileView = document.getElementById("profileView");
     const leaderView = document.getElementById("leaderView");
@@ -303,6 +329,8 @@
     const navLeaderboard = document.getElementById("navLeaderboard");
     const navReset = document.getElementById("navReset");
     const backToPlay = document.getElementById("backToPlay");
+
+    const championBanner = document.getElementById("championBanner");
 
     const lbRefresh = document.getElementById("lbRefresh");
     const lbBack = document.getElementById("lbBack");
@@ -361,7 +389,7 @@
     const devSearchBtn = document.getElementById("devSearchBtn");
     const devResult = document.getElementById("devResult");
 
-    // ------------------ Toast helpers ------------------
+    // Toast
     function showToast(title, msg){
       toastTitle.textContent = title;
       toastMsg.textContent = msg;
@@ -370,7 +398,7 @@
       toastTimer = setTimeout(() => { toast.style.display = "none"; }, 3500);
     }
 
-    // ------------------ Busy state ------------------
+    // Busy
     function setBusy(isBusy) {
       runBtn.disabled = isBusy;
       submitBtn.disabled = isBusy;
@@ -378,8 +406,8 @@
       exBtn.disabled = isBusy;
     }
 
-    // ------------------ Local storage state ------------------
-    const STORE_KEY = "pyquest_final_v2_progress";
+    // State
+    const STORE_KEY = "pyquest_final_v3_champ";
     const defaultState = () => ({
       name: "",
       xp: 0,
@@ -405,7 +433,7 @@
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
     }
 
-    // ------------------ Name flow ------------------
+    // Name flow
     function setWelcome(){
       const nm = state.name ? state.name : "Student";
       welcomeLine.textContent = `Hi ${nm}! Solve levels, earn badges, and learn Python — in story mode.`;
@@ -434,9 +462,10 @@
 
       await ensureAnonAuth();
       await syncProfileToFirebase();
+      await refreshChampionStatus(); // 👑 update banner instantly
     };
 
-    // ------------------ Views ------------------
+    // Views
     function showPlay(){
       profileView.style.display = "none";
       leaderView.style.display = "none";
@@ -445,20 +474,22 @@
       updateTopStats();
     }
 
-    function showProfile(){
+    async function showProfile(){
       playView.style.display = "none";
       leaderView.style.display = "none";
       devView.style.display = "none";
       profileView.style.display = "block";
       updateProfile();
+      await refreshChampionStatus(); // 👑 check if this user is #1
     }
 
-    function showLeaderboard(){
+    async function showLeaderboard(){
       playView.style.display = "none";
       profileView.style.display = "none";
       devView.style.display = "none";
       leaderView.style.display = "block";
-      loadLeaderboard().catch(()=>{});
+      await loadLeaderboard();
+      await refreshChampionStatus(); // keep local state updated
     }
 
     function showDev(){
@@ -471,13 +502,11 @@
     }
 
     navPlay.onclick = showPlay;
-    navProfile.onclick = showProfile;
-    navLeaderboard.onclick = showLeaderboard;
+    navProfile.onclick = () => showProfile();
+    navLeaderboard.onclick = () => showLeaderboard();
     backToPlay.onclick = showPlay;
-
     lbBack.onclick = showPlay;
     lbRefresh.onclick = () => loadLeaderboard();
-
     devClose.onclick = showPlay;
 
     navReset.onclick = async () => {
@@ -494,9 +523,8 @@
       showPlay();
     };
 
-    // ------------------ Pyodide ------------------
+    // Pyodide
     let pyodide = null;
-
     async function ensurePyodide(){
       if(pyodide) return pyodide;
       setBusy(true);
@@ -513,15 +541,12 @@
     function resetStdout(py){
       py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
     }
-
     function getStdout(py){
       return String(py.runPython("sys.stdout.getvalue()"));
     }
-
     function normalizeOutput(s){
       return String(s).replace(/\s+/g, " ").trim();
     }
-
     function friendlyError(e){
       const msg = String(e?.message || e);
       if(msg.includes("SyntaxError")) return msg + "\nTip: Check quotes/brackets/colons/indentation.";
@@ -530,9 +555,9 @@
       return msg;
     }
 
-    // ------------------ Infinite level generator ------------------
+    // Infinite levels
     function makeLevel(n){
-      const stage = (n - 1) % 6; // 0..5
+      const stage = (n - 1) % 6;
       const storyBase = [
         "You are locked inside a space vault. Each correct program unlocks a door.",
         "A robot friend needs your code to move forward through the maze.",
@@ -555,7 +580,6 @@
           validate: (py, rawOut) => normalizeOutput(rawOut) === msg
         };
       }
-
       if(stage === 1){
         const word = (n % 3 === 0) ? "OPEN" : "START";
         return {
@@ -572,7 +596,6 @@
           }
         };
       }
-
       if(stage === 2){
         const a = (n % 7) + 2;
         const b = (n % 5) + 1;
@@ -588,7 +611,6 @@
           validate: (py, rawOut) => normalizeOutput(rawOut) === ans
         };
       }
-
       if(stage === 3){
         const threshold = (n % 4) + 3;
         return {
@@ -606,7 +628,6 @@
           }
         };
       }
-
       if(stage === 4){
         const k = (n % 5) + 3;
         const expected = Array.from({length:k}, (_,i)=>String(i+1)).join(" ");
@@ -641,7 +662,7 @@
       };
     }
 
-    // ------------------ Badges / Achievements ------------------
+    // Badges
     const BADGES = [
       { id:"solve_1",   name:"First Step",        desc:"Complete 1 level",   rule:(s)=> s.solvedLevels.length >= 1 },
       { id:"solve_5",   name:"Learner x5",        desc:"Complete 5 levels",  rule:(s)=> s.solvedLevels.length >= 5 },
@@ -669,7 +690,7 @@
       saveState();
     }
 
-    // ------------------ Level + hints state ------------------
+    // Level hints state
     let currentLevel = null;
     let hintsLeft = 0;
     let shownHints = 0;
@@ -682,7 +703,6 @@
       }
       return state.perLevelHintsLeft[key];
     }
-
     function setHintsLeftForLevel(levelNum, value){
       state.perLevelHintsLeft[String(levelNum)] = value;
       saveState();
@@ -690,7 +710,6 @@
 
     function loadLevel(levelNum){
       currentLevel = makeLevel(levelNum);
-
       levelTitle.textContent = currentLevel.title;
       storyEl.textContent = currentLevel.story;
       promptEl.textContent = currentLevel.prompt;
@@ -707,7 +726,7 @@
       updateTopStats();
     }
 
-    // ------------------ UI updates ------------------
+    // UI updates
     function updateTopStats(){
       xpEl.textContent = state.xp;
       badgeCountEl.textContent = state.badges.length;
@@ -753,7 +772,34 @@
       }
     }
 
-    // ------------------ Leaderboard ------------------
+    // ------------------ 👑 GLOBAL TOP-1 CHAMPION LOGIC ------------------
+    let currentTop1Uid = null;
+
+    async function getTop1Uid(){
+      await ensureAnonAuth();
+      const colRef = collection(db, "profiles_public");
+      const qy = query(colRef, orderBy("xp", "desc"), limit(1));
+      const snap = await getDocs(qy);
+      if(snap.empty) return null;
+      return snap.docs[0].id; // doc id = user uid
+    }
+
+    async function refreshChampionStatus(){
+      try{
+        currentTop1Uid = await getTop1Uid();
+        const myUid = auth.currentUser?.uid || null;
+        const amIChampion = (myUid && currentTop1Uid && myUid === currentTop1Uid);
+
+        // Show/hide banner in profile view
+        championBanner.style.display = amIChampion ? "block" : "none";
+      } catch (e){
+        // If anything fails, just hide banner
+        championBanner.style.display = "none";
+        console.warn("Champion check failed:", e);
+      }
+    }
+
+    // Leaderboard
     async function loadLeaderboard(){
       lbStatus.textContent = "Loading leaderboard...";
       leaderList.innerHTML = "";
@@ -785,7 +831,7 @@
               <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                 <div class="pill">#${rank}</div>
                 <div><b>${name}</b></div>
-                ${rank === 1 ? `<div class="pill">👑 Champion</div>` : ""}
+                ${rank === 1 ? `<div class="pill champPill">👑 Champion</div>` : ""}
               </div>
               <div class="right">
                 <span class="pill">⭐ XP: <b>${xp}</b></span>
@@ -806,7 +852,7 @@
       }
     }
 
-    // ------------------ Buttons: Hint / EX / Run / Submit ------------------
+    // Hint / EX / Run / Submit
     hintBtn.onclick = () => {
       const L = currentLevel;
       if(hintsLeft <= 0) return;
@@ -891,6 +937,9 @@
           await ensureAnonAuth();
           await syncProfileToFirebase();
 
+          // 👑 After updating XP, re-check champion
+          await refreshChampionStatus();
+
           loadLevel(state.currentLevel);
         } else {
           outputEl.textContent =
@@ -904,7 +953,7 @@
       }
     };
 
-    // ------------------ Firebase: auth + visits + profiles ------------------
+    // Firebase: auth + visits + profiles
     let anonReady = false;
 
     async function ensureAnonAuth(){
@@ -956,7 +1005,7 @@
       await setDoc(doc(db, "profiles_public", uid), payload, { merge:true });
     }
 
-    // ------------------ Dev Ctrl (only when ?dev=1) ------------------
+    // Dev Ctrl (?dev=1)
     const urlParams = new URLSearchParams(location.search);
     const devRequested = (urlParams.get("dev") === "1");
     if(devRequested){
@@ -1022,7 +1071,7 @@
       }
     };
 
-    // ------------------ Init ------------------
+    // Init
     setWelcome();
 
     if(!state.name){
@@ -1041,6 +1090,7 @@
         if(state.name){
           await syncProfileToFirebase();
         }
+        await refreshChampionStatus(); // 👑 initial champion check
       }catch(e){
         globalVisitsEl.textContent = "offline";
         console.warn("Firebase init error:", e);
