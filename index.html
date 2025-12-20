@@ -1389,31 +1389,32 @@
              expected:"4", explainKeywords:["len"], explainMe:"len(list) gives number of items." }
       },
       { name:"indexing", lesson:"📘 Lesson 12: Indexing\nFirst item is index 0.\nnums[0] gets first item.",
-        q1:{ prompt:"nums=[10,20,30]. Print nums[1]", starter:"# Write code\n", hints:["nums[1] is 20"], exampleCode:"a=[1,2]\nprint(a[0])",
-             expected:"20", explainKeywords:["index","[1]"], explainMe:"Index 1 means the second item." },
-        q2:{ prompt:"words=['a','b','c']. Print last item using index", starter:"# Write code\n", hints:["last index is -1"], exampleCode:"w=['x']\nprint(w[-1])",
-             expected:"c", explainKeywords:["-1","last"], explainMe:"Index -1 means last element." }
-      },
-      { name:"slicing", lesson:"📘 Lesson 13: Slicing\nnums[1:3] gives items 1 and 2.",
-        q1:{ prompt:"nums=[0,1,2,3,4]. Print nums[1:4]", starter:"# Write code\n",
-             hints:["slice 1:4 gives 1,2,3"], exampleCode:"a=[0,1,2]\nprint(a[1:3])", expected:"[1, 2, 3]",
-             explainKeywords:["slice","1:4"], explainMe:"Slice end index is not included." },
-        q2:{ prompt:"nums=[0,1,2,3,4]. Print nums[:2]", starter:"# Write code\n",
-             hints:["nums[:2] gives 0,1"], exampleCode:"a=[9,8,7]\nprint(a[:2])", expected:"[0, 1]",
-             explainKeywords:[":2"], explainMe": "Slice from start to index 2 (not included)." }
-      },
-      { name:"list methods", lesson:"📘 Lesson 14: append() and pop()\nappend adds, pop removes last.",
-        q1:{ prompt:"a=[1,2]. Append 3 then print a", starter:"# Write code\n", hints:["a.append(3)"], exampleCode:"a=[]\na.append(5)\nprint(a)",
-             expected:"[1, 2, 3]", explainKeywords:["append"], explainMe:"append adds item to the end." },
-        q2:{ prompt:"a=[1,2,3]. Pop once then print a", starter:"# Write code\n", hints:["a.pop() removes last"], exampleCode:"a=[1,2]\na.pop()\nprint(a)",
-             expected:"[1, 2]", explainKeywords:["pop"], explainMe:"pop removes and returns last item." }
-      },
-      { name:"for loop", lesson:"📘 Lesson 15: for loops\nfor i in range(1,4):\n  print(i)",
-        q1:{ prompt:"Print 1 2 3 using a for loop", starter:"# Write code\n", hints:["range(1,4)"], exampleCode:"for i in range(1,3):\n print(i)",
-             expected:"1 2 3", explainKeywords:["for","range"], explainMe:"Loop prints each value of i." },
-        q2:{ prompt:"Sum 1..5 in a loop and print the sum", starter:"# Write code\n", hints:["total=0","total+=i"], exampleCode:"t=0\nfor i in range(1,4):\n t+=i\nprint(t)",
-             expected:"15", explainKeywords:["+=","total"], explainMe:"Add i to total each iteration." }
-      },
+  q1:{ prompt:"nums=[10,20,30]. Print nums[1]", starter:"# Write code\n", hints:["nums[1] is 20"], exampleCode:"a=[1,2]\nprint(a[0])",
+       expected:"20", explainKeywords:["index","[1]"], explainMe:"Index 1 means the second item." },
+  q2:{ prompt:"words=['a','b','c']. Print last item using index", starter:"# Write code\n", hints:["last index is -1"], exampleCode:"w=['x']\nprint(w[-1])",
+       expected:"c", explainKeywords:["-1","last"], explainMe:"Index -1 means last element." }
+},
+{ name:"slicing", lesson:"📘 Lesson 13: Slicing\nnums[1:3] gives items 1 and 2.",
+  q1:{ prompt:"nums=[0,1,2,3,4]. Print nums[1:4]", starter:"# Write code\n",
+       hints:["slice 1:4 gives 1,2,3"], exampleCode:"a=[0,1,2]\nprint(a[1:3])", expected:"[1, 2, 3]",
+       explainKeywords:["slice","1:4"], explainMe:"Slice end index is not included." },
+  q2:{ prompt:"nums=[0,1,2,3,4]. Print nums[:2]", starter:"# Write code\n",
+       hints:["nums[:2] gives 0,1"], exampleCode:"a=[9,8,7]\nprint(a[:2])", expected:"[0, 1]",
+       explainKeywords:[":2"], explainMe:"Slice from start to index 2 (not included)." }
+},
+{ name:"list_methods", lesson:"📘 Lesson 14: append() and pop()\nappend adds, pop removes last.",
+  q1:{ prompt:"a=[1,2]. Append 3 then print a", starter:"# Write code\n", hints:["a.append(3)"], exampleCode:"a=[]\na.append(5)\nprint(a)",
+       expected:"[1, 2, 3]", explainKeywords:["append"], explainMe:"append adds item to the end." },
+  q2:{ prompt:"a=[1,2,3]. Pop once then print a", starter:"# Write code\n", hints:["a.pop() removes last"], exampleCode:"a=[1,2]\na.pop()\nprint(a)",
+       expected:"[1, 2]", explainKeywords:["pop"], explainMe:"pop removes and returns last item." }
+},
+{ name:"for_loop", lesson:"📘 Lesson 15: for loops\nfor i in range(1,4):\n  print(i)",
+  q1:{ prompt:"Print 1 2 3 using a for loop", starter:"# Write code\n", hints:["range(1,4)"], exampleCode:"for i in range(1,3):\n print(i)",
+       expected:"1 2 3", explainKeywords:["for","range"], explainMe:"Loop prints each value of i." },
+  q2:{ prompt:"Sum 1..5 in a loop and print the sum", starter:"# Write code\n", hints:["total=0","total+=i"], exampleCode:"t=0\nfor i in range(1,4):\n t+=i\nprint(t)",
+       expected:"15", explainKeywords:["+=","total"], explainMe:"Add i to total each iteration." }
+},
+
       { name:"while loop", lesson:"📘 Lesson 16: while loops\nRepeat while condition is True.\nBe careful to update variable.",
         q1:{ prompt:"Use while to print 1 2 3", starter:"# Write code\n", hints:["i=1","while i<=3:","i+=1"], exampleCode:"i=1\nwhile i<=2:\n print(i)\n i+=1",
              expected:"1 2 3", explainKeywords:["while","i+=1"], explainMe:"Increase i so loop ends." },
