@@ -20,6 +20,7 @@
     .btn{ padding:10px 12px; border-radius:10px; border:0; cursor:pointer; background:#e5e7eb; color:#111; }
     .btn.primary{ background:var(--accent); }
     .btn.ghost{ background:transparent; border:1px solid var(--border); color:var(--txt); }
+    .btn.danger{ background: var(--bad); color:#0b1220; }
     .btn:disabled{ opacity:.6; cursor:not-allowed; }
     .card{ background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:14px; margin-top:12px; }
     .story{ color:var(--muted); margin:6px 0 0; line-height:1.35; }
@@ -74,7 +75,6 @@
     .help{ color:var(--muted); font-size:13px; margin-top:6px; line-height:1.35; }
     @media (max-width: 900px){ .split, .grid{ grid-template-columns: 1fr; } }
 
-    /* 👑 Champion banner + profile decoration */
     .champBanner{
       margin-top:12px;
       padding:12px;
@@ -90,55 +90,27 @@
       background: rgba(255, 215, 0, 0.08);
     }
 
-    /* 👑 Sparkle crown next to profile name */
-    .profileHeader{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-    }
+    .profileHeader{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
     .crownWrap{
-      display:none;
-      position:relative;
-      width:46px;
-      height:46px;
-      border-radius:14px;
+      display:none; position:relative; width:46px; height:46px; border-radius:14px;
       border:1px solid rgba(255,215,0,0.55);
-      background: radial-gradient(circle at 30% 30%, rgba(255,215,0,0.22), transparent 60%),
-                  rgba(255,255,255,0.03);
+      background: radial-gradient(circle at 30% 30%, rgba(255,215,0,0.22), transparent 60%), rgba(255,255,255,0.03);
       box-shadow: 0 0 18px rgba(255,215,0,0.12);
-      align-items:center;
-      justify-content:center;
+      align-items:center; justify-content:center;
     }
     .crownWrap.show{ display:inline-flex; }
-    .crownIcon{
-      font-size:26px;
-      animation: crownFloat 2.2s ease-in-out infinite;
-    }
-    @keyframes crownFloat{
-      0%,100%{ transform: translateY(0); }
-      50%{ transform: translateY(-4px); }
-    }
+    .crownIcon{ font-size:26px; animation: crownFloat 2.2s ease-in-out infinite; }
+    @keyframes crownFloat{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-4px); } }
     .sparkle{
-      position:absolute;
-      width:6px; height:6px;
-      border-radius:50%;
-      background: rgba(255,255,255,0.95);
-      filter: blur(0.2px);
-      opacity:0;
-      animation: twinkle 1.6s ease-in-out infinite;
+      position:absolute; width:6px; height:6px; border-radius:50%;
+      background: rgba(255,255,255,0.95); opacity:0; animation: twinkle 1.6s ease-in-out infinite;
     }
     .sparkle.s1{ top:8px; left:10px; animation-delay:0.1s; }
     .sparkle.s2{ top:10px; right:10px; animation-delay:0.5s; }
     .sparkle.s3{ bottom:10px; left:14px; animation-delay:0.9s; }
     .sparkle.s4{ bottom:12px; right:14px; animation-delay:1.2s; }
-    @keyframes twinkle{
-      0%{ transform: scale(0.5); opacity:0; }
-      40%{ transform: scale(1.2); opacity:0.95; }
-      100%{ transform: scale(0.6); opacity:0; }
-    }
+    @keyframes twinkle{ 0%{ transform: scale(0.5); opacity:0; } 40%{ transform: scale(1.2); opacity:0.95; } 100%{ transform: scale(0.6); opacity:0; } }
 
-    /* 🎉 Confetti */
     .confetti {
       position: fixed;
       top: -10px;
@@ -149,17 +121,11 @@
       z-index: 99999;
       animation: fall 2.2s linear forwards, spin 1.1s linear infinite;
     }
-    @keyframes fall {
-      to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* 👑 Champion celebration modal */
     .champModalBg{
-      position: fixed; inset: 0;
-      display:none;
+      position: fixed; inset: 0; display:none;
       align-items:center; justify-content:center;
       background: rgba(0,0,0,0.75);
       z-index: 99998;
@@ -189,6 +155,8 @@
       0%,100%{ transform: translateY(0); }
       50%{ transform: translateY(-6px); }
     }
+
+    .hr{ height:1px; background: rgba(148,163,184,0.25); margin: 10px 0; border:0; }
   </style>
 </head>
 
@@ -206,12 +174,11 @@
         <button class="btn ghost" id="navPlay">Play</button>
         <button class="btn ghost" id="navProfile">Profile</button>
         <button class="btn ghost" id="navLeaderboard">Leaderboard</button>
-        <button class="btn ghost" id="navReset">Reset</button>
+        <button class="btn ghost" id="navLogout">Logout</button>
         <button class="btn ghost" id="devBtn" style="display:none;">Dev Ctrl</button>
       </div>
     </div>
 
-    <!-- PLAY -->
     <div id="playView" class="card">
       <div class="row">
         <div>
@@ -252,22 +219,17 @@
       </div>
     </div>
 
-    <!-- PROFILE -->
     <div id="profileView" class="card" style="display:none;">
       <div class="row">
         <div class="profileHeader">
-          <!-- 👑 crown + sparkles (shown only if #1) -->
           <div class="crownWrap" id="profileCrown">
-            <span class="sparkle s1"></span>
-            <span class="sparkle s2"></span>
-            <span class="sparkle s3"></span>
-            <span class="sparkle s4"></span>
+            <span class="sparkle s1"></span><span class="sparkle s2"></span>
+            <span class="sparkle s3"></span><span class="sparkle s4"></span>
             <div class="crownIcon">👑</div>
           </div>
-
           <div>
             <div class="pill">👤 <b id="profileName">Your Profile</b></div>
-            <div class="story">Saved in this browser + synced online (Firebase).</div>
+            <div class="story">Synced online: Username + PIN</div>
           </div>
         </div>
 
@@ -276,7 +238,6 @@
         </div>
       </div>
 
-      <!-- 👑 Champion banner -->
       <div id="championBanner" class="champBanner" style="display:none;">
         <div class="row">
           <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -300,7 +261,7 @@
             <span class="pill">💡 Hints used: <b id="pHints">0</b></span>
             <span class="pill">🔥 Current level: <b id="pCurrent">1</b></span>
           </div>
-          <div class="help">To change track, use Reset and start again.</div>
+          <div class="help">To change track, logout and create new username.</div>
         </div>
 
         <div class="card" style="margin:0;">
@@ -317,7 +278,6 @@
       </div>
     </div>
 
-    <!-- LEADERBOARD -->
     <div id="leaderView" class="card" style="display:none;">
       <div class="row">
         <div>
@@ -337,7 +297,6 @@
       </div>
     </div>
 
-    <!-- DEV CTRL -->
     <div id="devView" class="card" style="display:none;">
       <div class="row">
         <div>
@@ -369,9 +328,9 @@
 
       <div class="card" style="margin-top:12px;">
         <b>Search a student profile</b>
-        <div class="help">Search by name (case-insensitive).</div>
+        <div class="help">Search by username (exact match, case-insensitive).</div>
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-          <input id="devSearch" placeholder="Type name e.g., Rahul" style="flex:1; min-width:220px;">
+          <input id="devSearch" placeholder="Type username e.g., rahul" style="flex:1; min-width:220px;">
           <button class="btn primary" id="devSearchBtn">Search</button>
         </div>
         <pre id="devResult" style="margin-top:10px; min-height:120px;"></pre>
@@ -379,41 +338,52 @@
     </div>
   </div>
 
-  <!-- NAME + TRACK MODAL -->
-  <div class="modalBackdrop" id="nameBackdrop">
+  <div class="modalBackdrop" id="loginBackdrop">
     <div class="modal">
-      <div style="font-size:18px; font-weight:700;">Welcome to PyQuest 👋</div>
-      <div class="help">Enter your name and choose your Python level.</div>
+      <div style="font-size:18px; font-weight:700;">Login to PyQuest 🔐</div>
+      <div class="help">Use the same <b>Username + PIN</b> on any computer to continue your progress.</div>
 
       <div style="margin-top:10px; display:grid; gap:10px;">
         <div>
-          <div class="help" style="margin-bottom:6px;">Your name</div>
-          <input id="nameInput" maxlength="20" placeholder="Your name (e.g., Rahul)">
+          <div class="help" style="margin-bottom:6px;">Username (no spaces)</div>
+          <input id="uInput" maxlength="20" placeholder="e.g., rahul123">
         </div>
 
         <div>
-          <div class="help" style="margin-bottom:6px;">Your Python level</div>
+          <div class="help" style="margin-bottom:6px;">PIN (4–6 digits)</div>
+          <input id="pinInput" maxlength="6" inputmode="numeric" placeholder="e.g., 1234">
+        </div>
+
+        <div id="trackBlock" style="display:none;">
+          <div class="help" style="margin-bottom:6px;">Choose your Python level (only for NEW account)</div>
           <select id="trackSelect">
             <option value="beginner">Beginner (easy basics)</option>
             <option value="moderate">Moderate (lists, dicts, strings)</option>
             <option value="pro">Professional (hard concepts)</option>
           </select>
         </div>
-      </div>
 
-      <div class="right" style="margin-top:12px;">
-        <button class="btn primary" id="saveNameBtn">Start</button>
+        <div class="help" id="loginMsg"></div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn primary" id="loginBtn">Login</button>
+          <button class="btn ghost" id="createBtn">Create New</button>
+        </div>
+
+        <hr class="hr">
+        <div class="help">
+          If your username exists, use <b>Login</b>.<br>
+          If it doesn’t exist, click <b>Create New</b>.
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- TOAST -->
   <div class="toast" id="toast">
     <div class="tTitle" id="toastTitle">🏆 Achievement Unlocked!</div>
     <div class="tMsg" id="toastMsg"></div>
   </div>
 
-  <!-- 👑 Champion Celebration Modal -->
   <div class="champModalBg" id="champModalBg">
     <div class="champModal">
       <div class="champCrown">👑</div>
@@ -428,19 +398,17 @@
     </div>
   </div>
 
-  <!-- Python engine -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import {
       getFirestore, doc, getDoc, setDoc, runTransaction, serverTimestamp,
-      collection, query, where, getDocs, limit, orderBy
+      collection, query, getDocs, limit, orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
     import { getAuth, signInAnonymously, signInWithEmailAndPassword }
       from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyADtZ0hjE0VUVVLnEJgqwOBJqokIbb0Lu0",
       authDomain: "pyquest-6e039.firebaseapp.com",
@@ -455,7 +423,6 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // Elements
     const playView = document.getElementById("playView");
     const profileView = document.getElementById("profileView");
     const leaderView = document.getElementById("leaderView");
@@ -464,7 +431,7 @@
     const navPlay = document.getElementById("navPlay");
     const navProfile = document.getElementById("navProfile");
     const navLeaderboard = document.getElementById("navLeaderboard");
-    const navReset = document.getElementById("navReset");
+    const navLogout = document.getElementById("navLogout");
     const backToPlay = document.getElementById("backToPlay");
 
     const championBanner = document.getElementById("championBanner");
@@ -498,7 +465,6 @@
     const solvedCountEl = document.getElementById("solvedCount");
     const globalVisitsEl = document.getElementById("globalVisits");
 
-    // Profile
     const profileNameEl = document.getElementById("profileName");
     const pTrack = document.getElementById("pTrack");
     const pSolved = document.getElementById("pSolved");
@@ -508,26 +474,24 @@
     const recentLevelsEl = document.getElementById("recentLevels");
     const badgeListEl = document.getElementById("badgeList");
 
-    // Modal
-    const nameBackdrop = document.getElementById("nameBackdrop");
-    const nameInput = document.getElementById("nameInput");
+    const loginBackdrop = document.getElementById("loginBackdrop");
+    const uInput = document.getElementById("uInput");
+    const pinInput = document.getElementById("pinInput");
+    const trackBlock = document.getElementById("trackBlock");
     const trackSelect = document.getElementById("trackSelect");
-    const saveNameBtn = document.getElementById("saveNameBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const createBtn = document.getElementById("createBtn");
+    const loginMsg = document.getElementById("loginMsg");
 
-    // Toast
     const toast = document.getElementById("toast");
     const toastTitle = document.getElementById("toastTitle");
     const toastMsg = document.getElementById("toastMsg");
     let toastTimer = null;
 
-    // Champion celebration modal
     const champModalBg = document.getElementById("champModalBg");
     const champCloseBtn = document.getElementById("champCloseBtn");
-    champCloseBtn?.addEventListener("click", () => {
-      champModalBg.style.display = "none";
-    });
+    champCloseBtn?.addEventListener("click", () => champModalBg.style.display = "none");
 
-    // Dev ctrl
     const adminEmail = document.getElementById("adminEmail");
     const adminPass = document.getElementById("adminPass");
     const adminLoginBtn = document.getElementById("adminLoginBtn");
@@ -537,7 +501,6 @@
     const devSearchBtn = document.getElementById("devSearchBtn");
     const devResult = document.getElementById("devResult");
 
-    // Toast
     function showToast(title, msg){
       toastTitle.textContent = title;
       toastMsg.textContent = msg;
@@ -560,7 +523,6 @@
         setTimeout(() => c.remove(), 2600);
       }
     }
-
     function showChampionCelebration(){
       champModalBg.style.display = "flex";
       spawnConfetti(110);
@@ -573,10 +535,38 @@
       exBtn.disabled = isBusy;
     }
 
-    // State
-    const STORE_KEY = "pyquest_final_v6_rank1_anim";
+    function normalizeOutput(s){ return String(s).replace(/\s+/g, " ").trim(); }
+    function trackLabel(t){
+      if(t === "beginner") return "Beginner";
+      if(t === "moderate") return "Moderate";
+      if(t === "pro") return "Professional";
+      return "-";
+    }
+
+    async function sha256Hex(text){
+      const enc = new TextEncoder().encode(text);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function cleanUsername(raw){
+      return (raw || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9_]/g, "");
+    }
+
+    function validPin(pin){
+      return /^[0-9]{4,6}$/.test(pin || "");
+    }
+
+    const USERS_COL = "users_public";
+    const SESSION_KEY = "pyquest_session_user";
+    let sessionUser = localStorage.getItem(SESSION_KEY) || "";
+
     const defaultState = () => ({
-      name: "",
+      username: "",
       track: "",
       xp: 0,
       currentLevel: 1,
@@ -586,58 +576,16 @@
       perLevelHintsLeft: {},
     });
 
-    let state = loadState();
-
-    function loadState(){
-      try{
-        const raw = localStorage.getItem(STORE_KEY);
-        return raw ? JSON.parse(raw) : defaultState();
-      }catch{
-        return defaultState();
-      }
-    }
-    function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-
-    function trackLabel(t){
-      if(t === "beginner") return "Beginner";
-      if(t === "moderate") return "Moderate";
-      if(t === "pro") return "Professional";
-      return "-";
-    }
+    let state = defaultState();
 
     function setWelcome(){
-      const nm = state.name ? state.name : "Student";
+      const nm = state.username ? state.username : "Student";
       welcomeLine.textContent = `Hi ${nm}! Track: ${trackLabel(state.track)} — solve levels, earn badges, learn Python.`;
       profileNameEl.textContent = `${nm}'s Profile`;
       trackPill.textContent = trackLabel(state.track);
       pTrack.textContent = trackLabel(state.track);
     }
 
-    function showNameModal(){
-      nameBackdrop.style.display = "flex";
-      setTimeout(() => nameInput.focus(), 50);
-    }
-    function hideNameModal(){ nameBackdrop.style.display = "none"; }
-
-    saveNameBtn.onclick = async () => {
-      const nm = (nameInput.value || "").trim();
-      const tr = (trackSelect.value || "").trim();
-      if(!nm){ alert("Please enter your name."); return; }
-      if(!tr){ alert("Please choose your python level."); return; }
-
-      state.name = nm;
-      state.track = tr;
-      saveState();
-      setWelcome();
-      hideNameModal();
-
-      await ensureAnonAuth();
-      await syncProfileToFirebase();
-      await refreshChampionStatus(); // includes #1 popup + crown
-      loadLevel(state.currentLevel);
-    };
-
-    // Views
     function showPlay(){
       profileView.style.display = "none";
       leaderView.style.display = "none";
@@ -667,30 +615,196 @@
       leaderView.style.display = "none";
       devView.style.display = "block";
       adminStatus.textContent = "Please login to use Dev Ctrl.";
-      devResult.textContent = "Login first, then search a name.";
+      devResult.textContent = "Login first, then search a username.";
     }
 
     navPlay.onclick = showPlay;
     navProfile.onclick = () => showProfile();
     navLeaderboard.onclick = () => showLeaderboard();
     backToPlay.onclick = showPlay;
-    lbBack.onclick = showPlay;
-    lbRefresh.onclick = () => loadLeaderboard();
-    devClose.onclick = showPlay;
 
-    navReset.onclick = async () => {
-      const ok = confirm("Reset everything? (name/track/levels/badges/xp). This cannot be undone.");
+    navLogout.onclick = () => {
+      const ok = confirm("Logout? (Your progress stays online, you can login again with username+PIN.)");
       if(!ok) return;
-      localStorage.removeItem(STORE_KEY);
+      localStorage.removeItem(SESSION_KEY);
+      sessionUser = "";
       state = defaultState();
-      saveState();
-      showToast("Reset done ✅", "Your progress was cleared.");
       setWelcome();
-      showNameModal();
-      showPlay();
+      showLoginModal();
     };
 
-    // Pyodide
+    const urlParams = new URLSearchParams(location.search);
+    if(urlParams.get("dev") === "1"){
+      devBtn.style.display = "inline-block";
+    }
+    devBtn.onclick = () => showDev();
+    devClose.onclick = showPlay;
+
+    function showLoginModal(){
+      loginBackdrop.style.display = "flex";
+      loginMsg.textContent = "";
+      trackBlock.style.display = "none";
+      setTimeout(() => uInput.focus(), 50);
+    }
+    function hideLoginModal(){ loginBackdrop.style.display = "none"; }
+
+    async function loadUserProfile(usernameLower){
+      const ref = doc(db, USERS_COL, usernameLower);
+      const snap = await getDoc(ref);
+      return snap.exists() ? snap.data() : null;
+    }
+
+    async function saveUserProfile(){
+      if(!state.username) return;
+      const ref = doc(db, USERS_COL, state.username);
+      const payload = {
+        username: state.username,
+        usernameLower: state.username,
+        track: state.track || "beginner",
+        xp: state.xp,
+        currentLevel: state.currentLevel,
+        solvedLevels: state.solvedLevels,
+        badges: state.badges,
+        hintsUsedTotal: state.hintsUsedTotal,
+        perLevelHintsLeft: state.perLevelHintsLeft,
+        solved: state.solvedLevels.length,
+        updatedAt: serverTimestamp(),
+      };
+      await setDoc(ref, payload, { merge:true });
+    }
+
+    // ✅ LOGIN EXISTING
+    loginBtn.onclick = async () => {
+      loginMsg.textContent = "Checking account...";
+      const usernameLower = cleanUsername(uInput.value);
+      const pin = (pinInput.value || "").trim();
+
+      if(!usernameLower){
+        loginMsg.textContent = "❌ Enter a valid username (letters/numbers/_ only).";
+        return;
+      }
+      if(!validPin(pin)){
+        loginMsg.textContent = "❌ PIN must be 4–6 digits.";
+        return;
+      }
+
+      try{
+        const profile = await loadUserProfile(usernameLower);
+        if(!profile){
+          trackBlock.style.display = "block";
+          loginMsg.textContent = "⚠️ Username not found. Click 'Create New' to make this account.";
+          return;
+        }
+
+        const pinHash = await sha256Hex(pin);
+        if(profile.pinHash !== pinHash){
+          loginMsg.textContent = "❌ Wrong PIN. Try again.";
+          return;
+        }
+
+        state = {
+          username: profile.username || usernameLower,
+          track: profile.track || "beginner",
+          xp: profile.xp ?? 0,
+          currentLevel: profile.currentLevel ?? 1,
+          solvedLevels: Array.isArray(profile.solvedLevels) ? profile.solvedLevels : [],
+          badges: Array.isArray(profile.badges) ? profile.badges : [],
+          hintsUsedTotal: profile.hintsUsedTotal ?? 0,
+          perLevelHintsLeft: profile.perLevelHintsLeft || {},
+        };
+
+        sessionUser = usernameLower;
+        localStorage.setItem(SESSION_KEY, usernameLower);
+
+        hideLoginModal();
+        setWelcome();
+        updateTopStats();
+        loadLevel(state.currentLevel);
+        showPlay();
+
+        showToast("✅ Logged in", `Welcome back, ${state.username}!`);
+        await refreshChampionStatus();
+      } catch (e){
+        console.warn(e);
+        loginMsg.textContent = "❌ Login failed (check internet).";
+      }
+    };
+
+    // ✅ CREATE NEW (TRANSACTION UNIQUE USERNAME)
+    createBtn.onclick = async () => {
+      loginMsg.textContent = "Creating...";
+      const usernameLower = cleanUsername(uInput.value);
+      const pin = (pinInput.value || "").trim();
+
+      if(!usernameLower){
+        loginMsg.textContent = "❌ Enter a valid username (letters/numbers/_ only).";
+        return;
+      }
+      if(!validPin(pin)){
+        loginMsg.textContent = "❌ PIN must be 4–6 digits.";
+        return;
+      }
+
+      trackBlock.style.display = "block";
+      const tr = (trackSelect.value || "").trim();
+      if(!tr){
+        loginMsg.textContent = "❌ Choose your track.";
+        return;
+      }
+
+      try{
+        const pinHash = await sha256Hex(pin);
+        const userRef = doc(db, USERS_COL, usernameLower);
+
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(userRef);
+          if(snap.exists()){
+            throw new Error("USERNAME_TAKEN");
+          }
+          tx.set(userRef, {
+            username: usernameLower,
+            usernameLower: usernameLower,
+            pinHash,
+            track: tr,
+            xp: 0,
+            currentLevel: 1,
+            solvedLevels: [],
+            badges: [],
+            hintsUsedTotal: 0,
+            perLevelHintsLeft: {},
+            solved: 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        });
+
+        state = defaultState();
+        state.username = usernameLower;
+        state.track = tr;
+
+        sessionUser = usernameLower;
+        localStorage.setItem(SESSION_KEY, usernameLower);
+
+        hideLoginModal();
+        setWelcome();
+        updateTopStats();
+        loadLevel(1);
+        showPlay();
+
+        showToast("🎉 Account created!", `Welcome, ${state.username}!`);
+        await refreshChampionStatus();
+
+      } catch (e){
+        if(String(e?.message || e).includes("USERNAME_TAKEN")){
+          loginMsg.textContent = "❌ Username already taken. Choose a different one.";
+          return;
+        }
+        console.warn(e);
+        loginMsg.textContent = "❌ Create failed (check internet).";
+      }
+    };
+
+    // ---------- Pyodide ----------
     let pyodide = null;
     async function ensurePyodide(){
       if(pyodide) return pyodide;
@@ -706,7 +820,6 @@
       py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
     }
     function getStdout(py){ return String(py.runPython("sys.stdout.getvalue()")); }
-    function normalizeOutput(s){ return String(s).replace(/\s+/g, " ").trim(); }
     function friendlyError(e){
       const msg = String(e?.message || e);
       if(msg.includes("SyntaxError")) return msg + "\nTip: Check quotes/brackets/colons/indentation.";
@@ -715,9 +828,7 @@
       return msg;
     }
 
-    // ------------------ Levels per track (infinite) ------------------
-    // (same logic as before, kept compact but infinite)
-
+    // ---------- Infinite levels (Beginner/Moderate/Pro) ----------
     function makeBeginnerLevel(n){
       const stage = (n - 1) % 6;
       const storyBase = [
@@ -1066,7 +1177,6 @@
       return makeBeginnerLevel(n);
     }
 
-    // Badges
     const BADGES = [
       { id:"solve_1",   name:"First Step",        desc:"Complete 1 level",   rule:(s)=> s.solvedLevels.length >= 1 },
       { id:"solve_5",   name:"Learner x5",        desc:"Complete 5 levels",  rule:(s)=> s.solvedLevels.length >= 5 },
@@ -1080,14 +1190,11 @@
       for(const b of BADGES){
         if(!state.badges.includes(b.id) && b.rule(state)){
           state.badges.push(b.id);
-          saveState();
           showToast("🏆 Achievement Unlocked!", `${b.name}\n${b.desc}`);
         }
       }
-      saveState();
     }
 
-    // Level hints
     let currentLevel = null;
     let hintsLeft = 0;
     let shownHints = 0;
@@ -1096,32 +1203,11 @@
       const key = String(levelNum);
       if(state.perLevelHintsLeft[key] === undefined){
         state.perLevelHintsLeft[key] = budget;
-        saveState();
       }
       return state.perLevelHintsLeft[key];
     }
     function setHintsLeftForLevel(levelNum, value){
       state.perLevelHintsLeft[String(levelNum)] = value;
-      saveState();
-    }
-
-    function loadLevel(levelNum){
-      currentLevel = makeLevel(levelNum);
-      levelTitle.textContent = currentLevel.title;
-      storyEl.textContent = currentLevel.story;
-      promptEl.textContent = currentLevel.prompt;
-
-      codeEl.value = currentLevel.starter;
-      outputEl.textContent = "";
-      hintsEl.innerHTML = "";
-
-      shownHints = 0;
-      hintsLeft = getHintsLeftForLevel(levelNum, currentLevel.hintBudget);
-      hintBtn.textContent = `Hint (${hintsLeft} left)`;
-      exBtn.style.display = "none";
-
-      updateTopStats();
-      setWelcome();
     }
 
     function updateTopStats(){
@@ -1170,12 +1256,29 @@
       }
     }
 
-    // ------------------ 👑 Champion (#1) status + animation + profile crown ------------------
+    function loadLevel(levelNum){
+      currentLevel = makeLevel(levelNum);
+      levelTitle.textContent = currentLevel.title;
+      storyEl.textContent = currentLevel.story;
+      promptEl.textContent = currentLevel.prompt;
+
+      codeEl.value = currentLevel.starter;
+      outputEl.textContent = "";
+      hintsEl.innerHTML = "";
+
+      shownHints = 0;
+      hintsLeft = getHintsLeftForLevel(levelNum, currentLevel.hintBudget);
+      hintBtn.textContent = `Hint (${hintsLeft} left)`;
+      exBtn.style.display = "none";
+
+      updateTopStats();
+      setWelcome();
+    }
+
     let wasChampion = false;
 
-    async function getTop1Uid(){
-      await ensureAnonAuth();
-      const colRef = collection(db, "profiles_public");
+    async function getTop1Username(){
+      const colRef = collection(db, USERS_COL);
       const qy = query(colRef, orderBy("xp", "desc"), limit(1));
       const snap = await getDocs(qy);
       if(snap.empty) return null;
@@ -1184,52 +1287,41 @@
 
     async function refreshChampionStatus(){
       try{
-        const top1Uid = await getTop1Uid();
-        const myUid = auth.currentUser?.uid || null;
-        const amIChampion = (myUid && top1Uid && myUid === top1Uid);
+        const top1 = await getTop1Username();
+        const amIChampion = (state.username && top1 && state.username === top1);
 
-        // Banner + profile crown decoration
         championBanner.style.display = amIChampion ? "block" : "none";
-        if(amIChampion){
-          profileCrown.classList.add("show");
-        } else {
-          profileCrown.classList.remove("show");
-        }
+        if(amIChampion) profileCrown.classList.add("show");
+        else profileCrown.classList.remove("show");
 
-        // Celebration only when BECOMING #1
         if(amIChampion && !wasChampion){
           showToast("👑 YOU ARE #1!", "You are now #1 on the Global Leaderboard!\nKeep going 🔥");
           showChampionCelebration();
         }
-
         wasChampion = amIChampion;
-      } catch (e){
+      } catch(e){
         championBanner.style.display = "none";
         profileCrown.classList.remove("show");
-        console.warn("Champion check failed:", e);
       }
     }
 
-    // Leaderboard
     async function loadLeaderboard(){
       lbStatus.textContent = "Loading leaderboard...";
       leaderList.innerHTML = "";
-      await ensureAnonAuth();
-
       try{
-        const colRef = collection(db, "profiles_public");
+        const colRef = collection(db, USERS_COL);
         const qy = query(colRef, orderBy("xp", "desc"), limit(10));
         const snap = await getDocs(qy);
 
         if(snap.empty){
-          lbStatus.textContent = "No players yet. Solve a level to appear here!";
+          lbStatus.textContent = "No players yet.";
           return;
         }
 
         let rank = 1;
         snap.forEach((docSnap) => {
           const d = docSnap.data();
-          const name = d.name || "Unknown";
+          const name = d.username || docSnap.id;
           const xp = d.xp ?? 0;
           const solved = d.solved ?? 0;
           const lvl = d.currentLevel ?? 1;
@@ -1259,14 +1351,11 @@
 
         lbStatus.textContent = "✅ Updated.";
       } catch (e){
-        lbStatus.textContent =
-          "❌ Leaderboard failed. If console says 'index required', create it from the link shown there.";
-        console.warn("Leaderboard error:", e);
+        lbStatus.textContent = "❌ Failed. If console says index needed, create it from Firebase link.";
       }
     }
 
-    // Hint / EX / Run / Submit
-    hintBtn.onclick = () => {
+    hintBtn.onclick = async () => {
       const L = currentLevel;
       if(hintsLeft <= 0) return;
 
@@ -1274,8 +1363,6 @@
       setHintsLeftForLevel(state.currentLevel, hintsLeft);
 
       state.hintsUsedTotal += 1;
-      saveState();
-
       hintBtn.textContent = `Hint (${hintsLeft} left)`;
 
       const li = document.createElement("li");
@@ -1289,7 +1376,7 @@
       }
 
       updateTopStats();
-      syncProfileToFirebase().catch(()=>{});
+      await saveUserProfile().catch(()=>{});
     };
 
     exBtn.onclick = () => {
@@ -1314,8 +1401,8 @@
     };
 
     submitBtn.onclick = async () => {
-      if(!state.name || !state.track){
-        showNameModal();
+      if(!state.username){
+        showLoginModal();
         return;
       }
 
@@ -1336,19 +1423,14 @@
           const bonus = Math.max(0, hintsLeft);
           state.xp += 10 + bonus;
 
-          saveState();
           alert(`✅ Successfully completed LEVEL ${state.currentLevel}!`);
 
           state.currentLevel += 1;
-          saveState();
 
           checkBadges();
           updateTopStats();
 
-          await ensureAnonAuth();
-          await syncProfileToFirebase();
-
-          // after updating xp, refresh #1 status (may trigger celebration)
+          await saveUserProfile();
           await refreshChampionStatus();
 
           loadLevel(state.currentLevel);
@@ -1356,24 +1438,10 @@
           outputEl.textContent =
             `❌ Not correct yet.\n\nYour Output:\n${normalizeOutput(rawOut) || "(no output)"}\n\nTip: Try again (extra spaces/new lines are ignored).`;
         }
-
       }catch(e){
         outputEl.textContent = "❌ Error:\n" + friendlyError(e);
       } finally { setBusy(false); }
     };
-
-    // Firebase: auth + visits + profiles
-    let anonReady = false;
-
-    async function ensureAnonAuth(){
-      if(anonReady && auth.currentUser) return;
-      try{
-        await signInAnonymously(auth);
-        anonReady = true;
-      }catch(e){
-        anonReady = true;
-      }
-    }
 
     async function incrementGlobalVisit(){
       const statsRef = doc(db, "stats", "global");
@@ -1383,7 +1451,6 @@
         tx.set(statsRef, { visits: cur + 1, updatedAt: serverTimestamp() }, { merge:true });
       });
     }
-
     async function readGlobalVisits(){
       const statsRef = doc(db, "stats", "global");
       const snap = await getDoc(statsRef);
@@ -1391,36 +1458,6 @@
       globalVisitsEl.textContent = v;
       devGlobalVisitsEl.textContent = v;
     }
-
-    async function syncProfileToFirebase(){
-      if(!state.name) return;
-      const user = auth.currentUser;
-      if(!user) return;
-
-      const uid = user.uid;
-      const nameLower = state.name.toLowerCase();
-
-      const payload = {
-        name: state.name,
-        nameLower,
-        track: state.track || "beginner",
-        xp: state.xp,
-        solved: state.solvedLevels.length,
-        currentLevel: state.currentLevel,
-        badges: state.badges,
-        hintsUsed: state.hintsUsedTotal,
-        updatedAt: serverTimestamp(),
-      };
-
-      await setDoc(doc(db, "profiles_public", uid), payload, { merge:true });
-    }
-
-    // Dev Ctrl (?dev=1)
-    const urlParams = new URLSearchParams(location.search);
-    if(urlParams.get("dev") === "1"){
-      devBtn.style.display = "inline-block";
-    }
-    devBtn.onclick = () => showDev();
 
     let isAdminLoggedIn = false;
 
@@ -1430,10 +1467,7 @@
         await signInWithEmailAndPassword(auth, (adminEmail.value || "").trim(), adminPass.value || "");
         isAdminLoggedIn = true;
         adminStatus.textContent = "✅ Admin logged in.";
-        try { await readGlobalVisits(); } catch (e) {
-          adminStatus.textContent = "✅ Admin logged in (but visits read blocked). Check Firestore Rules.";
-          console.warn("Visits read error:", e);
-        }
+        await readGlobalVisits();
       }catch(e){
         isAdminLoggedIn = false;
         adminStatus.textContent = "❌ Login failed: " + (e?.message || e);
@@ -1445,71 +1479,80 @@
         devResult.textContent = "❌ Please login as admin first.";
         return;
       }
-      const qName = (devSearch.value || "").trim();
-      if(!qName){
-        devResult.textContent = "Type a name to search.";
+      const qUser = cleanUsername(devSearch.value);
+      if(!qUser){
+        devResult.textContent = "Type a username to search.";
         return;
       }
 
       devResult.textContent = "Searching...";
       try{
-        const qLower = qName.toLowerCase();
-        const colRef = collection(db, "profiles_public");
-        const qy = query(colRef, where("nameLower", "==", qLower), limit(5));
-        const snap = await getDocs(qy);
-
-        if(snap.empty){
-          devResult.textContent = "Not found.\n(Spelling must match the saved name.)";
+        const prof = await loadUserProfile(qUser);
+        if(!prof){
+          devResult.textContent = "Not found.";
           return;
         }
-
-        const d = snap.docs[0].data();
         devResult.textContent =
           `FOUND PROFILE\n\n` +
-          `Name: ${d.name}\n` +
-          `Track: ${trackLabel(d.track)}\n` +
-          `Solved: ${d.solved}\n` +
-          `XP: ${d.xp}\n` +
-          `Current Level: ${d.currentLevel}\n` +
-          `Badges: ${(d.badges || []).join(", ") || "(none)"}\n` +
-          `Hints Used: ${d.hintsUsed ?? "-"}\n`;
+          `Username: ${prof.username}\n` +
+          `Track: ${trackLabel(prof.track)}\n` +
+          `Solved: ${prof.solved ?? (prof.solvedLevels?.length || 0)}\n` +
+          `XP: ${prof.xp}\n` +
+          `Current Level: ${prof.currentLevel}\n` +
+          `Badges: ${(prof.badges || []).join(", ") || "(none)"}\n` +
+          `Hints Used: ${prof.hintsUsedTotal ?? "-"}\n`;
       } catch(e){
         devResult.textContent = "Error: " + (e?.message || e);
       }
     };
 
-    // Init
-    setWelcome();
-
-    if(!state.name || !state.track){
-      showNameModal();
-    } else {
-      trackSelect.value = state.track;
-      loadLevel(state.currentLevel);
+    async function ensureAnonAuth(){
+      try{ await signInAnonymously(auth); }catch{}
     }
 
-    showPlay();
-    updateTopStats();
-
     (async () => {
+      await ensureAnonAuth();
+
       try{
-        await ensureAnonAuth();
         await incrementGlobalVisit();
         await readGlobalVisits();
-        if(state.name){
-          await syncProfileToFirebase();
-        }
-        await refreshChampionStatus();
-      }catch(e){
+      }catch{
         globalVisitsEl.textContent = "offline";
-        console.warn("Firebase init error:", e);
       }
-    })();
 
-    // ✅ Auto-check champion every 8 seconds
-    setInterval(() => {
-      refreshChampionStatus().catch(()=>{});
-    }, 8000);
+      if(sessionUser){
+        try{
+          const prof = await loadUserProfile(sessionUser);
+          if(prof){
+            state = {
+              username: prof.username || sessionUser,
+              track: prof.track || "beginner",
+              xp: prof.xp ?? 0,
+              currentLevel: prof.currentLevel ?? 1,
+              solvedLevels: Array.isArray(prof.solvedLevels) ? prof.solvedLevels : [],
+              badges: Array.isArray(prof.badges) ? prof.badges : [],
+              hintsUsedTotal: prof.hintsUsedTotal ?? 0,
+              perLevelHintsLeft: prof.perLevelHintsLeft || {},
+            };
+            setWelcome();
+            updateTopStats();
+            loadLevel(state.currentLevel);
+            showToast("✅ Welcome back!", `Logged in as ${state.username}`);
+            await refreshChampionStatus();
+          } else {
+            localStorage.removeItem(SESSION_KEY);
+            sessionUser = "";
+            showLoginModal();
+          }
+        } catch {
+          showLoginModal();
+        }
+      } else {
+        showLoginModal();
+      }
+
+      setInterval(() => refreshChampionStatus().catch(()=>{}), 8000);
+    })();
 
   </script>
 </body>
