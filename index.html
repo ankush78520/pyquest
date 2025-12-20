@@ -67,7 +67,7 @@
       background:#0b1220; border:1px solid var(--border); border-radius:16px; padding:14px;
       box-shadow: var(--shadow);
     }
-    input{
+    input, select{
       width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
       background:#020617; color:var(--txt); outline:none;
     }
@@ -119,6 +119,7 @@
           <div class="story" id="story"></div>
         </div>
         <div class="right">
+          <span class="pill">🎯 Track: <b id="trackPill">-</b></span>
           <span class="pill">🌍 Global visits: <b id="globalVisits">-</b></span>
           <span class="pill">⭐ XP: <b id="xp">0</b></span>
           <span class="pill">🏅 Badges: <b id="badgeCount">0</b></span>
@@ -181,11 +182,13 @@
         <div class="card" style="margin:0;">
           <b>Stats</b>
           <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <span class="pill">🎯 Track: <b id="pTrack">-</b></span>
             <span class="pill">✅ Levels solved: <b id="pSolved">0</b></span>
             <span class="pill">⭐ XP: <b id="pXp">0</b></span>
             <span class="pill">💡 Hints used: <b id="pHints">0</b></span>
             <span class="pill">🔥 Current level: <b id="pCurrent">1</b></span>
           </div>
+          <div class="help">If you want to change track, use Reset and start again.</div>
         </div>
 
         <div class="card" style="margin:0;">
@@ -256,9 +259,7 @@
 
       <div class="card" style="margin-top:12px;">
         <b>Search a student profile</b>
-        <div class="help">
-          Search by name (case-insensitive).
-        </div>
+        <div class="help">Search by name (case-insensitive).</div>
         <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
           <input id="devSearch" placeholder="Type name e.g., Rahul" style="flex:1; min-width:220px;">
           <button class="btn primary" id="devSearchBtn">Search</button>
@@ -268,17 +269,29 @@
     </div>
   </div>
 
-  <!-- NAME MODAL -->
+  <!-- NAME + TRACK MODAL -->
   <div class="modalBackdrop" id="nameBackdrop">
     <div class="modal">
       <div style="font-size:18px; font-weight:700;">Welcome to PyQuest 👋</div>
-      <div class="help">
-        Enter your name to start. This will be your profile name.
+      <div class="help">Enter your name and choose your Python level.</div>
+
+      <div style="margin-top:10px; display:grid; gap:10px;">
+        <div>
+          <div class="help" style="margin-bottom:6px;">Your name</div>
+          <input id="nameInput" maxlength="20" placeholder="Your name (e.g., Rahul)">
+        </div>
+
+        <div>
+          <div class="help" style="margin-bottom:6px;">Your Python level</div>
+          <select id="trackSelect">
+            <option value="beginner">Beginner (easy basics)</option>
+            <option value="moderate">Moderate (lists, dicts, strings)</option>
+            <option value="pro">Professional (hard concepts)</option>
+          </select>
+          <div class="help">This will decide what kind of questions you get.</div>
+        </div>
       </div>
-      <div style="margin-top:10px;">
-        <input id="nameInput" maxlength="20" placeholder="Your name (e.g., Rahul)">
-        <div class="help">Tip: Use your real name for school practical.</div>
-      </div>
+
       <div class="right" style="margin-top:12px;">
         <button class="btn primary" id="saveNameBtn">Start</button>
       </div>
@@ -303,7 +316,7 @@
     import { getAuth, signInAnonymously, signInWithEmailAndPassword }
       from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-    // 🔥 Your Firebase config
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyADtZ0hjE0VUVVLnEJgqwOBJqokIbb0Lu0",
       authDomain: "pyquest-6e039.firebaseapp.com",
@@ -341,6 +354,7 @@
     const devClose = document.getElementById("devClose");
 
     const welcomeLine = document.getElementById("welcomeLine");
+    const trackPill = document.getElementById("trackPill");
 
     const levelTitle = document.getElementById("levelTitle");
     const storyEl = document.getElementById("story");
@@ -361,6 +375,7 @@
 
     // Profile
     const profileNameEl = document.getElementById("profileName");
+    const pTrack = document.getElementById("pTrack");
     const pSolved = document.getElementById("pSolved");
     const pXp = document.getElementById("pXp");
     const pHints = document.getElementById("pHints");
@@ -368,9 +383,10 @@
     const recentLevelsEl = document.getElementById("recentLevels");
     const badgeListEl = document.getElementById("badgeList");
 
-    // Name modal
+    // Modal
     const nameBackdrop = document.getElementById("nameBackdrop");
     const nameInput = document.getElementById("nameInput");
+    const trackSelect = document.getElementById("trackSelect");
     const saveNameBtn = document.getElementById("saveNameBtn");
 
     // Toast
@@ -407,9 +423,10 @@
     }
 
     // State
-    const STORE_KEY = "pyquest_final_v3_champ";
+    const STORE_KEY = "pyquest_final_v4_tracks";
     const defaultState = () => ({
       name: "",
+      track: "",           // beginner | moderate | pro
       xp: 0,
       currentLevel: 1,
       solvedLevels: [],
@@ -433,11 +450,20 @@
       localStorage.setItem(STORE_KEY, JSON.stringify(state));
     }
 
-    // Name flow
+    function trackLabel(t){
+      if(t === "beginner") return "Beginner";
+      if(t === "moderate") return "Moderate";
+      if(t === "pro") return "Professional";
+      return "-";
+    }
+
+    // Name/track flow
     function setWelcome(){
       const nm = state.name ? state.name : "Student";
-      welcomeLine.textContent = `Hi ${nm}! Solve levels, earn badges, and learn Python — in story mode.`;
+      welcomeLine.textContent = `Hi ${nm}! Track: ${trackLabel(state.track)} — solve levels, earn badges, learn Python.`;
       profileNameEl.textContent = `${nm}'s Profile`;
+      trackPill.textContent = trackLabel(state.track);
+      pTrack.textContent = trackLabel(state.track);
     }
 
     function showNameModal(){
@@ -451,18 +477,31 @@
 
     saveNameBtn.onclick = async () => {
       const nm = (nameInput.value || "").trim();
+      const tr = (trackSelect.value || "").trim();
       if(!nm){
         alert("Please enter your name.");
         return;
       }
+      if(!tr){
+        alert("Please choose your python level.");
+        return;
+      }
+
       state.name = nm;
+      state.track = tr;
+
+      // If track changed from old to new, reset levels for fairness
+      // (but usually first time only)
+      if(state.currentLevel < 1) state.currentLevel = 1;
+
       saveState();
       setWelcome();
       hideNameModal();
 
       await ensureAnonAuth();
       await syncProfileToFirebase();
-      await refreshChampionStatus(); // 👑 update banner instantly
+      await refreshChampionStatus();
+      loadLevel(state.currentLevel);
     };
 
     // Views
@@ -480,7 +519,7 @@
       devView.style.display = "none";
       profileView.style.display = "block";
       updateProfile();
-      await refreshChampionStatus(); // 👑 check if this user is #1
+      await refreshChampionStatus();
     }
 
     async function showLeaderboard(){
@@ -489,7 +528,7 @@
       devView.style.display = "none";
       leaderView.style.display = "block";
       await loadLeaderboard();
-      await refreshChampionStatus(); // keep local state updated
+      await refreshChampionStatus();
     }
 
     function showDev(){
@@ -510,7 +549,7 @@
     devClose.onclick = showPlay;
 
     navReset.onclick = async () => {
-      const ok = confirm("Reset everything? (name, levels, badges, xp). This cannot be undone.");
+      const ok = confirm("Reset everything? (name/track/levels/badges/xp). This cannot be undone.");
       if(!ok) return;
       localStorage.removeItem(STORE_KEY);
       state = defaultState();
@@ -519,7 +558,6 @@
 
       setWelcome();
       showNameModal();
-      loadLevel(state.currentLevel);
       showPlay();
     };
 
@@ -555,31 +593,33 @@
       return msg;
     }
 
-    // Infinite levels
-    function makeLevel(n){
+    // ------------------ Tracks: question banks ------------------
+
+    function makeBeginnerLevel(n){
       const stage = (n - 1) % 6;
       const storyBase = [
-        "You are locked inside a space vault. Each correct program unlocks a door.",
-        "A robot friend needs your code to move forward through the maze.",
-        "The lab terminal demands a correct script to continue the experiment.",
-        "A spaceship computer requests the next command sequence.",
-        "The dungeon gate opens only when Python answers correctly.",
-        "A hacker console demands a correct script to proceed."
+        "A vault door needs a basic command.",
+        "Your robot friend wants a simple variable.",
+        "The lab console needs quick math.",
+        "The spaceship wants an if/else decision.",
+        "A dungeon gate needs a loop.",
+        "A terminal wants a simple function."
       ];
 
       if(stage === 0){
         const msg = (n % 2 === 0) ? "ACCESS GRANTED" : "HELLO PYQUEST";
         return {
-          title: `LEVEL ${n} – Print Mission`,
+          title: `LEVEL ${n} – Print`,
           story: storyBase[stage],
           prompt: `Print exactly: ${msg}`,
           starter: "# Use print()\n",
           hintBudget: 10,
-          hints: ["Use print()", "Text must be in quotes", "No extra spaces", "Only one print line"],
+          hints: ["Use print()", "Text must be inside quotes", "No extra spaces", "Only one print line"],
           exampleCode: `print("WELCOME USER")`,
           validate: (py, rawOut) => normalizeOutput(rawOut) === msg
         };
       }
+
       if(stage === 1){
         const word = (n % 3 === 0) ? "OPEN" : "START";
         return {
@@ -596,6 +636,7 @@
           }
         };
       }
+
       if(stage === 2){
         const a = (n % 7) + 2;
         const b = (n % 5) + 1;
@@ -611,6 +652,7 @@
           validate: (py, rawOut) => normalizeOutput(rawOut) === ans
         };
       }
+
       if(stage === 3){
         const threshold = (n % 4) + 3;
         return {
@@ -628,6 +670,7 @@
           }
         };
       }
+
       if(stage === 4){
         const k = (n % 5) + 3;
         const expected = Array.from({length:k}, (_,i)=>String(i+1)).join(" ");
@@ -662,6 +705,251 @@
       };
     }
 
+    function makeModerateLevel(n){
+      // 6 moderate topics rotating
+      const stage = (n - 1) % 6;
+      const storyBase = [
+        "You found a message hidden in a string.",
+        "A list of items must be processed.",
+        "A dictionary gate needs correct keys.",
+        "A loop + condition combo unlocks the terminal.",
+        "A function must handle a small problem.",
+        "The console wants basic string formatting."
+      ];
+
+      if(stage === 0){
+        const word = (n % 2 === 0) ? "python" : "quest";
+        const expected = word.toUpperCase();
+        return {
+          title: `LEVEL ${n} – Strings`,
+          story: storyBase[stage],
+          prompt: `Set s = "${word}" and print s.upper()`,
+          starter: "# s = \"...\"\n# print(s.upper())\n",
+          hintBudget: 10,
+          hints: ["Use .upper()", "Print the result", "No extra spaces"],
+          exampleCode: `s="hello"\nprint(s.upper())`,
+          validate: (py, out) => {
+            const okS = Boolean(py.runPython(`('s' in globals()) and (s == '${word}')`));
+            return okS && normalizeOutput(out) === expected;
+          }
+        };
+      }
+
+      if(stage === 1){
+        const a = (n % 5) + 1;
+        const b = (n % 7) + 2;
+        const expected = String(a + b);
+        return {
+          title: `LEVEL ${n} – Lists`,
+          story: storyBase[stage],
+          prompt: `Create list nums = [${a}, ${b}] and print sum(nums)`,
+          starter: "# nums = [...]\n# print(sum(nums))\n",
+          hintBudget: 12,
+          hints: ["List uses [ ]", "Use sum(nums)", "Print the result"],
+          exampleCode: `nums=[2,5]\nprint(sum(nums))`,
+          validate: (py, out) => {
+            const ok = Boolean(py.runPython(`('nums' in globals()) and (nums == [${a}, ${b}])`));
+            return ok && normalizeOutput(out) === expected;
+          }
+        };
+      }
+
+      if(stage === 2){
+        const expected = "NAME: ALICE";
+        return {
+          title: `LEVEL ${n} – Dictionary`,
+          story: storyBase[stage],
+          prompt: `Make dict d={"name":"Alice"} and print "NAME: " + d["name"].upper()`,
+          starter: '# d = {"name": "Alice"}\n# print("NAME: " + d["name"].upper())\n',
+          hintBudget: 14,
+          hints: ["Use { } for dict", 'Access with d["name"]', "Use .upper()", "Print exactly NAME: ALICE"],
+          exampleCode: 'd={"x":"hi"}\nprint(d["x"].upper())',
+          validate: (py, out) => {
+            const ok = Boolean(py.runPython(`('d' in globals()) and (isinstance(d, dict)) and (d.get('name') == 'Alice')`));
+            return ok && normalizeOutput(out) === expected;
+          }
+        };
+      }
+
+      if(stage === 3){
+        // count evens from 1..k
+        const k = (n % 6) + 5; // 5..10
+        const expected = String(Math.floor(k/2));
+        return {
+          title: `LEVEL ${n} – Loop + Condition`,
+          story: storyBase[stage],
+          prompt: `Count how many even numbers are from 1 to ${k} and print the count`,
+          starter: "# count = 0\n# for i in range(1, k+1):\n#   if ...:\n#     count += 1\n# print(count)\n",
+          hintBudget: 16,
+          hints: ["Even means i % 2 == 0", "Use count += 1", "Print count"],
+          exampleCode: "count=0\nfor i in range(1,6):\n  if i%2==0:\n    count+=1\nprint(count)",
+          validate: (py, out) => normalizeOutput(out) === expected
+        };
+      }
+
+      if(stage === 4){
+        const val = (n % 9) + 1; // 1..9
+        const expected = String(val * val);
+        return {
+          title: `LEVEL ${n} – Functions`,
+          story: storyBase[stage],
+          prompt: `Write function square(x) that returns x*x. Print square(${val})`,
+          starter: "# def square(x):\n#   return ...\n# print(square(...))\n",
+          hintBudget: 16,
+          hints: ["Return x*x", "Call square(val)", "Print output"],
+          exampleCode: "def square(x):\n  return x*x\nprint(square(4))",
+          validate: (py, out) => {
+            const okFn = Boolean(py.runPython(`('square' in globals()) and callable(square)`));
+            const okVal = okFn ? Boolean(py.runPython(`square(${val}) == ${val*val}`)) : false;
+            return okFn && okVal && normalizeOutput(out) === expected;
+          }
+        };
+      }
+
+      // stage 5: f-string
+      const who = (n % 2 === 0) ? "Coder" : "Hero";
+      const expected = `Hi ${who}!`;
+      return {
+        title: `LEVEL ${n} – Formatting`,
+        story: storyBase[5],
+        prompt: `Set name="${who}" and print exactly: Hi ${who}! (Use an f-string)`,
+        starter: '# name = "..." \n# print(f"...")\n',
+        hintBudget: 14,
+        hints: ["Use f\"...{name}...\"", "Print exactly Hi NAME!", "Mind punctuation !"],
+        exampleCode: 'name="Sam"\nprint(f"Hi {name}!")',
+        validate: (py, out) => {
+          const ok = Boolean(py.runPython(`('name' in globals()) and (name == '${who}')`));
+          return ok && normalizeOutput(out) === expected;
+        }
+      };
+    }
+
+    function makeProLevel(n){
+      // 6 pro topics rotating (still safe for school browser)
+      const stage = (n - 1) % 6;
+      const storyBase = [
+        "The system wants a list comprehension.",
+        "A recursion challenge appears.",
+        "The console asks for a lambda.",
+        "A class must be created.",
+        "Exception handling saves the mission.",
+        "A mini algorithm unlocks the gate."
+      ];
+
+      if(stage === 0){
+        const k = (n % 6) + 4; // 4..9
+        const expected = Array.from({length:k}, (_,i)=>String((i+1)*(i+1))).join(" ");
+        return {
+          title: `LEVEL ${n} – List Comprehension`,
+          story: storyBase[stage],
+          prompt: `Create list squares = [i*i for i in range(1, ${k+1})] and print the list values separated by spaces`,
+          starter: "# squares = [ ... ]\n# print(*squares)\n",
+          hintBudget: 18,
+          hints: ["Use list comprehension", "range(1, k+1)", "Print with print(*squares)"],
+          exampleCode: "squares=[i*i for i in range(1,6)]\nprint(*squares)",
+          validate: (py, out) => normalizeOutput(out) === expected
+        };
+      }
+
+      if(stage === 1){
+        const m = (n % 5) + 4; // 4..8
+        // factorial m
+        let fact = 1; for(let i=2;i<=m;i++) fact*=i;
+        const expected = String(fact);
+        return {
+          title: `LEVEL ${n} – Recursion`,
+          story: storyBase[stage],
+          prompt: `Write recursive function fact(n) and print fact(${m})`,
+          starter: "# def fact(n):\n#   if n==0 or n==1:\n#     return 1\n#   return n*fact(n-1)\n# print(fact(...))\n",
+          hintBudget: 20,
+          hints: ["Base case: 0 or 1", "Recursive call: fact(n-1)", "Return n * fact(n-1)"],
+          exampleCode: "def fact(n):\n  return 1 if n<=1 else n*fact(n-1)\nprint(fact(5))",
+          validate: (py, out) => {
+            const okFn = Boolean(py.runPython(`('fact' in globals()) and callable(fact)`));
+            const okVal = okFn ? Boolean(py.runPython(`fact(${m}) == ${fact}`)) : false;
+            return okFn && okVal && normalizeOutput(out) === expected;
+          }
+        };
+      }
+
+      if(stage === 2){
+        const a = (n % 9) + 1;
+        const b = (n % 7) + 2;
+        const expected = String(a + b);
+        return {
+          title: `LEVEL ${n} – Lambda`,
+          story: storyBase[stage],
+          prompt: `Create add = lambda x,y: x+y and print add(${a}, ${b})`,
+          starter: "# add = lambda x,y: ...\n# print(add(a,b))\n",
+          hintBudget: 16,
+          hints: ["lambda x,y: x+y", "Call add(a,b)", "Print result"],
+          exampleCode: "add=lambda x,y:x+y\nprint(add(2,3))",
+          validate: (py, out) => {
+            const ok = Boolean(py.runPython(`('add' in globals()) and callable(add) and (add(${a},${b})==${a+b})`));
+            return ok && normalizeOutput(out) === expected;
+          }
+        };
+      }
+
+      if(stage === 3){
+        const x = (n % 6) + 2;
+        const expected = String(x * 3);
+        return {
+          title: `LEVEL ${n} – Classes`,
+          story: storyBase[stage],
+          prompt: `Create class Mult3 with method run(x) that returns x*3. Create obj and print obj.run(${x})`,
+          starter: "# class Mult3:\n#   def run(self, x):\n#     return ...\n# obj = Mult3()\n# print(obj.run(...))\n",
+          hintBudget: 22,
+          hints: ["Define class", "Method has self", "Return x*3", "Create object and call run"],
+          exampleCode: "class A:\n  def run(self,x):\n    return x*2\nobj=A()\nprint(obj.run(5))",
+          validate: (py, out) => {
+            const ok = Boolean(py.runPython(`('Mult3' in globals()) and callable(Mult3)`));
+            const okVal = ok ? Boolean(py.runPython(`Mult3().run(${x}) == ${x*3}`)) : false;
+            return ok && okVal && normalizeOutput(out) === expected;
+          }
+        };
+      }
+
+      if(stage === 4){
+        const expected = "safe";
+        return {
+          title: `LEVEL ${n} – Exceptions`,
+          story: storyBase[stage],
+          prompt: `Write code that tries int("abc") and catches exception, then prints "safe"`,
+          starter: "# try:\n#   int(\"abc\")\n# except:\n#   print(\"safe\")\n",
+          hintBudget: 18,
+          hints: ["Use try/except", 'int("abc") causes error', 'In except print("safe")'],
+          exampleCode: "try:\n  x=int('no')\nexcept:\n  print('safe')",
+          validate: (py, out) => normalizeOutput(out) === expected
+        };
+      }
+
+      // stage 5: mini algorithm - reverse string
+      const s = (n % 2 === 0) ? "PYTHON" : "MISSION";
+      const expected = s.split("").reverse().join("");
+      return {
+        title: `LEVEL ${n} – Mini Algorithm`,
+        story: storyBase[5],
+        prompt: `Set s="${s}" and print the reversed string`,
+        starter: "# s = \"...\"\n# print(s[::-1])\n",
+        hintBudget: 16,
+        hints: ["Use slicing s[::-1]", "Print the result"],
+        exampleCode: "s='HELLO'\nprint(s[::-1])",
+        validate: (py, out) => {
+          const ok = Boolean(py.runPython(`('s' in globals()) and (s == '${s}')`));
+          return ok && normalizeOutput(out) === expected;
+        }
+      };
+    }
+
+    function makeLevel(n){
+      // If track not chosen, default beginner
+      const tr = state.track || "beginner";
+      if(tr === "moderate") return makeModerateLevel(n);
+      if(tr === "pro") return makeProLevel(n);
+      return makeBeginnerLevel(n);
+    }
+
     // Badges
     const BADGES = [
       { id:"solve_1",   name:"First Step",        desc:"Complete 1 level",   rule:(s)=> s.solvedLevels.length >= 1 },
@@ -690,7 +978,7 @@
       saveState();
     }
 
-    // Level hints state
+    // Level hints
     let currentLevel = null;
     let hintsLeft = 0;
     let shownHints = 0;
@@ -710,6 +998,7 @@
 
     function loadLevel(levelNum){
       currentLevel = makeLevel(levelNum);
+
       levelTitle.textContent = currentLevel.title;
       storyEl.textContent = currentLevel.story;
       promptEl.textContent = currentLevel.prompt;
@@ -724,6 +1013,7 @@
 
       exBtn.style.display = "none";
       updateTopStats();
+      setWelcome();
     }
 
     // UI updates
@@ -731,10 +1021,12 @@
       xpEl.textContent = state.xp;
       badgeCountEl.textContent = state.badges.length;
       solvedCountEl.textContent = state.solvedLevels.length;
+      trackPill.textContent = trackLabel(state.track);
     }
 
     function updateProfile(){
       setWelcome();
+      pTrack.textContent = trackLabel(state.track);
       pSolved.textContent = state.solvedLevels.length;
       pXp.textContent = state.xp;
       pHints.textContent = state.hintsUsedTotal;
@@ -772,28 +1064,23 @@
       }
     }
 
-    // ------------------ 👑 GLOBAL TOP-1 CHAMPION LOGIC ------------------
-    let currentTop1Uid = null;
-
+    // 👑 Top-1 champion
     async function getTop1Uid(){
       await ensureAnonAuth();
       const colRef = collection(db, "profiles_public");
       const qy = query(colRef, orderBy("xp", "desc"), limit(1));
       const snap = await getDocs(qy);
       if(snap.empty) return null;
-      return snap.docs[0].id; // doc id = user uid
+      return snap.docs[0].id;
     }
 
     async function refreshChampionStatus(){
       try{
-        currentTop1Uid = await getTop1Uid();
+        const top1Uid = await getTop1Uid();
         const myUid = auth.currentUser?.uid || null;
-        const amIChampion = (myUid && currentTop1Uid && myUid === currentTop1Uid);
-
-        // Show/hide banner in profile view
+        const amIChampion = (myUid && top1Uid && myUid === top1Uid);
         championBanner.style.display = amIChampion ? "block" : "none";
       } catch (e){
-        // If anything fails, just hide banner
         championBanner.style.display = "none";
         console.warn("Champion check failed:", e);
       }
@@ -822,6 +1109,7 @@
           const xp = d.xp ?? 0;
           const solved = d.solved ?? 0;
           const lvl = d.currentLevel ?? 1;
+          const tr = d.track ? trackLabel(d.track) : "-";
 
           const row = document.createElement("div");
           row.className = "card";
@@ -832,6 +1120,7 @@
                 <div class="pill">#${rank}</div>
                 <div><b>${name}</b></div>
                 ${rank === 1 ? `<div class="pill champPill">👑 Champion</div>` : ""}
+                <div class="pill">🎯 ${tr}</div>
               </div>
               <div class="right">
                 <span class="pill">⭐ XP: <b>${xp}</b></span>
@@ -903,7 +1192,7 @@
     };
 
     submitBtn.onclick = async () => {
-      if(!state.name){
+      if(!state.name || !state.track){
         showNameModal();
         return;
       }
@@ -923,6 +1212,7 @@
           }
 
           const bonus = Math.max(0, hintsLeft);
+          // XP: same formula for all tracks; you can make pro give more later if you want
           state.xp += 10 + bonus;
 
           saveState();
@@ -936,8 +1226,6 @@
 
           await ensureAnonAuth();
           await syncProfileToFirebase();
-
-          // 👑 After updating XP, re-check champion
           await refreshChampionStatus();
 
           loadLevel(state.currentLevel);
@@ -994,6 +1282,7 @@
       const payload = {
         name: state.name,
         nameLower,
+        track: state.track || "beginner",
         xp: state.xp,
         solved: state.solvedLevels.length,
         currentLevel: state.currentLevel,
@@ -1011,7 +1300,6 @@
     if(devRequested){
       devBtn.style.display = "inline-block";
     }
-
     devBtn.onclick = () => showDev();
 
     let isAdminLoggedIn = false;
@@ -1022,9 +1310,7 @@
         await signInWithEmailAndPassword(auth, (adminEmail.value || "").trim(), adminPass.value || "");
         isAdminLoggedIn = true;
         adminStatus.textContent = "✅ Admin logged in.";
-        try {
-          await readGlobalVisits();
-        } catch (e) {
+        try { await readGlobalVisits(); } catch (e) {
           adminStatus.textContent = "✅ Admin logged in (but visits read blocked). Check Firestore Rules.";
           console.warn("Visits read error:", e);
         }
@@ -1061,6 +1347,7 @@
         devResult.textContent =
           `FOUND PROFILE\n\n` +
           `Name: ${d.name}\n` +
+          `Track: ${trackLabel(d.track)}\n` +
           `Solved: ${d.solved}\n` +
           `XP: ${d.xp}\n` +
           `Current Level: ${d.currentLevel}\n` +
@@ -1074,12 +1361,16 @@
     // Init
     setWelcome();
 
-    if(!state.name){
+    if(!state.name || !state.track){
       showNameModal();
+    } else {
+      // Set dropdown to saved track (if user opens modal again)
+      trackSelect.value = state.track;
     }
 
     updateTopStats();
-    loadLevel(state.currentLevel);
+    if(state.track) loadLevel(state.currentLevel);
+
     showPlay();
 
     (async () => {
@@ -1090,13 +1381,12 @@
         if(state.name){
           await syncProfileToFirebase();
         }
-        await refreshChampionStatus(); // 👑 initial champion check
+        await refreshChampionStatus();
       }catch(e){
         globalVisitsEl.textContent = "offline";
         console.warn("Firebase init error:", e);
       }
     })();
-
   </script>
 </body>
 </html>
