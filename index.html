@@ -164,7 +164,7 @@
         </div>
       </div>
 
-      <!-- 👑 Champion banner (hidden unless you are #1) -->
+      <!-- 👑 Champion banner -->
       <div id="championBanner" class="champBanner" style="display:none;">
         <div class="row">
           <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -188,7 +188,7 @@
             <span class="pill">💡 Hints used: <b id="pHints">0</b></span>
             <span class="pill">🔥 Current level: <b id="pCurrent">1</b></span>
           </div>
-          <div class="help">If you want to change track, use Reset and start again.</div>
+          <div class="help">To change track, use Reset and start again.</div>
         </div>
 
         <div class="card" style="margin:0;">
@@ -230,9 +230,7 @@
       <div class="row">
         <div>
           <div class="pill">🛠️ <b>Dev Control</b></div>
-          <div class="story">
-            Admin login required. Here you can see global visits and search student profiles.
-          </div>
+          <div class="story">Admin login required. You can see global visits and search profiles.</div>
         </div>
         <div class="right">
           <button class="btn ghost" id="devClose">Close</button>
@@ -241,7 +239,7 @@
 
       <div class="card" style="margin-top:12px;">
         <b>Admin Login</b>
-        <div class="help">Use the admin email/password you created in Firebase Authentication.</div>
+        <div class="help">Use admin email/password created in Firebase Authentication.</div>
         <div style="margin-top:10px; display:grid; gap:8px;">
           <input id="adminEmail" placeholder="Admin email">
           <input id="adminPass" type="password" placeholder="Admin password">
@@ -288,7 +286,6 @@
             <option value="moderate">Moderate (lists, dicts, strings)</option>
             <option value="pro">Professional (hard concepts)</option>
           </select>
-          <div class="help">This will decide what kind of questions you get.</div>
         </div>
       </div>
 
@@ -298,13 +295,13 @@
     </div>
   </div>
 
-  <!-- ACHIEVEMENT POPUP -->
+  <!-- TOAST -->
   <div class="toast" id="toast">
     <div class="tTitle" id="toastTitle">🏆 Achievement Unlocked!</div>
     <div class="tMsg" id="toastMsg"></div>
   </div>
 
-  <!-- Python in browser -->
+  <!-- Python engine -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 
   <script type="module">
@@ -414,7 +411,6 @@
       toastTimer = setTimeout(() => { toast.style.display = "none"; }, 3500);
     }
 
-    // Busy
     function setBusy(isBusy) {
       runBtn.disabled = isBusy;
       submitBtn.disabled = isBusy;
@@ -423,10 +419,10 @@
     }
 
     // State
-    const STORE_KEY = "pyquest_final_v4_tracks";
+    const STORE_KEY = "pyquest_final_v5_tracks_rank1";
     const defaultState = () => ({
       name: "",
-      track: "",           // beginner | moderate | pro
+      track: "",
       xp: 0,
       currentLevel: 1,
       solvedLevels: [],
@@ -445,10 +441,7 @@
         return defaultState();
       }
     }
-
-    function saveState(){
-      localStorage.setItem(STORE_KEY, JSON.stringify(state));
-    }
+    function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 
     function trackLabel(t){
       if(t === "beginner") return "Beginner";
@@ -457,7 +450,6 @@
       return "-";
     }
 
-    // Name/track flow
     function setWelcome(){
       const nm = state.name ? state.name : "Student";
       welcomeLine.textContent = `Hi ${nm}! Track: ${trackLabel(state.track)} — solve levels, earn badges, learn Python.`;
@@ -470,37 +462,23 @@
       nameBackdrop.style.display = "flex";
       setTimeout(() => nameInput.focus(), 50);
     }
-
-    function hideNameModal(){
-      nameBackdrop.style.display = "none";
-    }
+    function hideNameModal(){ nameBackdrop.style.display = "none"; }
 
     saveNameBtn.onclick = async () => {
       const nm = (nameInput.value || "").trim();
       const tr = (trackSelect.value || "").trim();
-      if(!nm){
-        alert("Please enter your name.");
-        return;
-      }
-      if(!tr){
-        alert("Please choose your python level.");
-        return;
-      }
+      if(!nm){ alert("Please enter your name."); return; }
+      if(!tr){ alert("Please choose your python level."); return; }
 
       state.name = nm;
       state.track = tr;
-
-      // If track changed from old to new, reset levels for fairness
-      // (but usually first time only)
-      if(state.currentLevel < 1) state.currentLevel = 1;
-
       saveState();
       setWelcome();
       hideNameModal();
 
       await ensureAnonAuth();
       await syncProfileToFirebase();
-      await refreshChampionStatus();
+      await refreshChampionStatus(); // includes #1 popup
       loadLevel(state.currentLevel);
     };
 
@@ -512,7 +490,6 @@
       playView.style.display = "block";
       updateTopStats();
     }
-
     async function showProfile(){
       playView.style.display = "none";
       leaderView.style.display = "none";
@@ -521,7 +498,6 @@
       updateProfile();
       await refreshChampionStatus();
     }
-
     async function showLeaderboard(){
       playView.style.display = "none";
       profileView.style.display = "none";
@@ -530,7 +506,6 @@
       await loadLeaderboard();
       await refreshChampionStatus();
     }
-
     function showDev(){
       playView.style.display = "none";
       profileView.style.display = "none";
@@ -555,7 +530,6 @@
       state = defaultState();
       saveState();
       showToast("Reset done ✅", "Your progress was cleared.");
-
       setWelcome();
       showNameModal();
       showPlay();
@@ -571,20 +545,13 @@
         pyodide = await loadPyodide();
         outputEl.textContent = "Ready ✅";
         return pyodide;
-      } finally {
-        setBusy(false);
-      }
+      } finally { setBusy(false); }
     }
-
     function resetStdout(py){
       py.runPython("import sys\nfrom io import StringIO\nsys.stdout = StringIO()\n");
     }
-    function getStdout(py){
-      return String(py.runPython("sys.stdout.getvalue()"));
-    }
-    function normalizeOutput(s){
-      return String(s).replace(/\s+/g, " ").trim();
-    }
+    function getStdout(py){ return String(py.runPython("sys.stdout.getvalue()")); }
+    function normalizeOutput(s){ return String(s).replace(/\s+/g, " ").trim(); }
     function friendlyError(e){
       const msg = String(e?.message || e);
       if(msg.includes("SyntaxError")) return msg + "\nTip: Check quotes/brackets/colons/indentation.";
@@ -593,7 +560,7 @@
       return msg;
     }
 
-    // ------------------ Tracks: question banks ------------------
+    // ------------------ Levels per track ------------------
 
     function makeBeginnerLevel(n){
       const stage = (n - 1) % 6;
@@ -706,7 +673,6 @@
     }
 
     function makeModerateLevel(n){
-      // 6 moderate topics rotating
       const stage = (n - 1) % 6;
       const storyBase = [
         "You found a message hidden in a string.",
@@ -772,7 +738,6 @@
       }
 
       if(stage === 3){
-        // count evens from 1..k
         const k = (n % 6) + 5; // 5..10
         const expected = String(Math.floor(k/2));
         return {
@@ -806,7 +771,6 @@
         };
       }
 
-      // stage 5: f-string
       const who = (n % 2 === 0) ? "Coder" : "Hero";
       const expected = `Hi ${who}!`;
       return {
@@ -825,7 +789,6 @@
     }
 
     function makeProLevel(n){
-      // 6 pro topics rotating (still safe for school browser)
       const stage = (n - 1) % 6;
       const storyBase = [
         "The system wants a list comprehension.",
@@ -842,7 +805,7 @@
         return {
           title: `LEVEL ${n} – List Comprehension`,
           story: storyBase[stage],
-          prompt: `Create list squares = [i*i for i in range(1, ${k+1})] and print the list values separated by spaces`,
+          prompt: `Create list squares = [i*i for i in range(1, ${k+1})] and print values separated by spaces`,
           starter: "# squares = [ ... ]\n# print(*squares)\n",
           hintBudget: 18,
           hints: ["Use list comprehension", "range(1, k+1)", "Print with print(*squares)"],
@@ -853,7 +816,6 @@
 
       if(stage === 1){
         const m = (n % 5) + 4; // 4..8
-        // factorial m
         let fact = 1; for(let i=2;i<=m;i++) fact*=i;
         const expected = String(fact);
         return {
@@ -897,7 +859,7 @@
         return {
           title: `LEVEL ${n} – Classes`,
           story: storyBase[stage],
-          prompt: `Create class Mult3 with method run(x) that returns x*3. Create obj and print obj.run(${x})`,
+          prompt: `Create class Mult3 with method run(x) that returns x*3. Print obj.run(${x})`,
           starter: "# class Mult3:\n#   def run(self, x):\n#     return ...\n# obj = Mult3()\n# print(obj.run(...))\n",
           hintBudget: 22,
           hints: ["Define class", "Method has self", "Return x*3", "Create object and call run"],
@@ -924,7 +886,6 @@
         };
       }
 
-      // stage 5: mini algorithm - reverse string
       const s = (n % 2 === 0) ? "PYTHON" : "MISSION";
       const expected = s.split("").reverse().join("");
       return {
@@ -943,7 +904,6 @@
     }
 
     function makeLevel(n){
-      // If track not chosen, default beginner
       const tr = state.track || "beginner";
       if(tr === "moderate") return makeModerateLevel(n);
       if(tr === "pro") return makeProLevel(n);
@@ -960,19 +920,12 @@
       { id:"solve_100", name:"Python Legend",     desc:"Complete 100 levels",rule:(s)=> s.solvedLevels.length >= 100 },
     ];
 
-    function awardBadgeIfNew(badgeId){
-      if(state.badges.includes(badgeId)) return false;
-      state.badges.push(badgeId);
-      saveState();
-      const b = BADGES.find(x=>x.id===badgeId);
-      showToast("🏆 Achievement Unlocked!", b ? `${b.name}\n${b.desc}` : badgeId);
-      return true;
-    }
-
     function checkBadges(){
       for(const b of BADGES){
         if(!state.badges.includes(b.id) && b.rule(state)){
-          awardBadgeIfNew(b.id);
+          state.badges.push(b.id);
+          saveState();
+          showToast("🏆 Achievement Unlocked!", `${b.name}\n${b.desc}`);
         }
       }
       saveState();
@@ -998,7 +951,6 @@
 
     function loadLevel(levelNum){
       currentLevel = makeLevel(levelNum);
-
       levelTitle.textContent = currentLevel.title;
       storyEl.textContent = currentLevel.story;
       promptEl.textContent = currentLevel.prompt;
@@ -1010,13 +962,12 @@
       shownHints = 0;
       hintsLeft = getHintsLeftForLevel(levelNum, currentLevel.hintBudget);
       hintBtn.textContent = `Hint (${hintsLeft} left)`;
-
       exBtn.style.display = "none";
+
       updateTopStats();
       setWelcome();
     }
 
-    // UI updates
     function updateTopStats(){
       xpEl.textContent = state.xp;
       badgeCountEl.textContent = state.badges.length;
@@ -1026,7 +977,6 @@
 
     function updateProfile(){
       setWelcome();
-      pTrack.textContent = trackLabel(state.track);
       pSolved.textContent = state.solvedLevels.length;
       pXp.textContent = state.xp;
       pHints.textContent = state.hintsUsedTotal;
@@ -1064,7 +1014,9 @@
       }
     }
 
-    // 👑 Top-1 champion
+    // ------------------ 👑 Champion + #1 Popup ------------------
+    let wasChampion = false;
+
     async function getTop1Uid(){
       await ensureAnonAuth();
       const colRef = collection(db, "profiles_public");
@@ -1079,7 +1031,17 @@
         const top1Uid = await getTop1Uid();
         const myUid = auth.currentUser?.uid || null;
         const amIChampion = (myUid && top1Uid && myUid === top1Uid);
+
+        // Banner
         championBanner.style.display = amIChampion ? "block" : "none";
+
+        // ✅ Popup only when becoming #1
+        if(amIChampion && !wasChampion){
+          showToast("👑 YOU ARE #1!", "You are now #1 on the Global Leaderboard!\nKeep going 🔥");
+          alert("👑 Congrats! You are now #1 on the Global Leaderboard!");
+        }
+
+        wasChampion = amIChampion;
       } catch (e){
         championBanner.style.display = "none";
         console.warn("Champion check failed:", e);
@@ -1186,9 +1148,7 @@
         outputEl.textContent = out || "(no output)";
       }catch(e){
         outputEl.textContent = friendlyError(e);
-      } finally {
-        setBusy(false);
-      }
+      } finally { setBusy(false); }
     };
 
     submitBtn.onclick = async () => {
@@ -1212,7 +1172,6 @@
           }
 
           const bonus = Math.max(0, hintsLeft);
-          // XP: same formula for all tracks; you can make pro give more later if you want
           state.xp += 10 + bonus;
 
           saveState();
@@ -1226,6 +1185,8 @@
 
           await ensureAnonAuth();
           await syncProfileToFirebase();
+
+          // 🔥 re-check champion AFTER updating xp
           await refreshChampionStatus();
 
           loadLevel(state.currentLevel);
@@ -1236,9 +1197,7 @@
 
       }catch(e){
         outputEl.textContent = "❌ Error:\n" + friendlyError(e);
-      } finally {
-        setBusy(false);
-      }
+      } finally { setBusy(false); }
     };
 
     // Firebase: auth + visits + profiles
@@ -1296,8 +1255,7 @@
 
     // Dev Ctrl (?dev=1)
     const urlParams = new URLSearchParams(location.search);
-    const devRequested = (urlParams.get("dev") === "1");
-    if(devRequested){
+    if(urlParams.get("dev") === "1"){
       devBtn.style.display = "inline-block";
     }
     devBtn.onclick = () => showDev();
@@ -1364,14 +1322,12 @@
     if(!state.name || !state.track){
       showNameModal();
     } else {
-      // Set dropdown to saved track (if user opens modal again)
       trackSelect.value = state.track;
+      loadLevel(state.currentLevel);
     }
 
-    updateTopStats();
-    if(state.track) loadLevel(state.currentLevel);
-
     showPlay();
+    updateTopStats();
 
     (async () => {
       try{
@@ -1387,6 +1343,12 @@
         console.warn("Firebase init error:", e);
       }
     })();
+
+    // ✅ Auto-check champion every 8 seconds (so popup happens even if #1 changes later)
+    setInterval(() => {
+      refreshChampionStatus().catch(()=>{});
+    }, 8000);
+
   </script>
 </body>
 </html>
