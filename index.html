@@ -90,6 +90,7 @@
       <div class="nav">
         <button class="btn ghost" id="navPlay">Play</button>
         <button class="btn ghost" id="navProfile">Profile</button>
+        <button class="btn ghost" id="navLeaderboard">Leaderboard</button>
         <button class="btn ghost" id="navReset">Reset</button>
         <button class="btn ghost" id="devBtn" style="display:none;">Dev Ctrl</button>
       </div>
@@ -172,6 +173,26 @@
       </div>
     </div>
 
+    <!-- LEADERBOARD -->
+    <div id="leaderView" class="card" style="display:none;">
+      <div class="row">
+        <div>
+          <div class="pill">🏆 <b>Global Leaderboard</b></div>
+          <div class="story">Top students by XP (global)</div>
+        </div>
+        <div class="right">
+          <button class="btn ghost" id="lbRefresh">Refresh</button>
+          <button class="btn ghost" id="lbBack">Back</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="story">Showing top 10</div>
+        <div id="leaderList" style="margin-top:10px; display:grid; gap:10px;"></div>
+        <div class="help" id="lbStatus"></div>
+      </div>
+    </div>
+
     <!-- DEV CTRL -->
     <div id="devView" class="card" style="display:none;">
       <div class="row">
@@ -214,10 +235,6 @@
           <button class="btn primary" id="devSearchBtn">Search</button>
         </div>
         <pre id="devResult" style="margin-top:10px; min-height:120px;"></pre>
-        <div class="help">
-          If multiple students use the same name, you’ll see one of them (Firestore returns a set; we show the first).
-          If you want unique usernames, tell me and we’ll add it.
-        </div>
       </div>
     </div>
   </div>
@@ -254,7 +271,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import {
       getFirestore, doc, getDoc, setDoc, runTransaction, serverTimestamp,
-      collection, query, where, getDocs, limit
+      collection, query, where, getDocs, limit, orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
     import {
       getAuth, signInAnonymously, signInWithEmailAndPassword
@@ -278,12 +295,19 @@
     // ------------------ Elements ------------------
     const playView = document.getElementById("playView");
     const profileView = document.getElementById("profileView");
+    const leaderView = document.getElementById("leaderView");
     const devView = document.getElementById("devView");
 
     const navPlay = document.getElementById("navPlay");
     const navProfile = document.getElementById("navProfile");
+    const navLeaderboard = document.getElementById("navLeaderboard");
     const navReset = document.getElementById("navReset");
     const backToPlay = document.getElementById("backToPlay");
+
+    const lbRefresh = document.getElementById("lbRefresh");
+    const lbBack = document.getElementById("lbBack");
+    const leaderList = document.getElementById("leaderList");
+    const lbStatus = document.getElementById("lbStatus");
 
     const devBtn = document.getElementById("devBtn");
     const devClose = document.getElementById("devClose");
@@ -355,7 +379,7 @@
     }
 
     // ------------------ Local storage state ------------------
-    const STORE_KEY = "pyquest_merged_v1_progress";
+    const STORE_KEY = "pyquest_final_v2_progress";
     const defaultState = () => ({
       name: "",
       xp: 0,
@@ -408,7 +432,6 @@
       setWelcome();
       hideNameModal();
 
-      // ensure auth then sync profile
       await ensureAnonAuth();
       await syncProfileToFirebase();
     };
@@ -416,6 +439,7 @@
     // ------------------ Views ------------------
     function showPlay(){
       profileView.style.display = "none";
+      leaderView.style.display = "none";
       devView.style.display = "none";
       playView.style.display = "block";
       updateTopStats();
@@ -423,14 +447,24 @@
 
     function showProfile(){
       playView.style.display = "none";
+      leaderView.style.display = "none";
       devView.style.display = "none";
       profileView.style.display = "block";
       updateProfile();
     }
 
+    function showLeaderboard(){
+      playView.style.display = "none";
+      profileView.style.display = "none";
+      devView.style.display = "none";
+      leaderView.style.display = "block";
+      loadLeaderboard().catch(()=>{});
+    }
+
     function showDev(){
       playView.style.display = "none";
       profileView.style.display = "none";
+      leaderView.style.display = "none";
       devView.style.display = "block";
       adminStatus.textContent = "Please login to use Dev Ctrl.";
       devResult.textContent = "Login first, then search a name.";
@@ -438,7 +472,12 @@
 
     navPlay.onclick = showPlay;
     navProfile.onclick = showProfile;
+    navLeaderboard.onclick = showLeaderboard;
     backToPlay.onclick = showPlay;
+
+    lbBack.onclick = showPlay;
+    lbRefresh.onclick = () => loadLeaderboard();
+
     devClose.onclick = showPlay;
 
     navReset.onclick = async () => {
@@ -449,13 +488,10 @@
       saveState();
       showToast("Reset done ✅", "Your progress was cleared.");
 
-      // keep global visits as-is; only reset local progress
       setWelcome();
       showNameModal();
       loadLevel(state.currentLevel);
       showPlay();
-
-      // sync blank-ish profile only if has name later
     };
 
     // ------------------ Pyodide ------------------
@@ -483,7 +519,6 @@
     }
 
     function normalizeOutput(s){
-      // friendly output compare: ignore extra whitespace/newlines
       return String(s).replace(/\s+/g, " ").trim();
     }
 
@@ -539,8 +574,8 @@
       }
 
       if(stage === 2){
-        const a = (n % 7) + 2; // 2..8
-        const b = (n % 5) + 1; // 1..5
+        const a = (n % 7) + 2;
+        const b = (n % 5) + 1;
         const ans = String(a + b);
         return {
           title: `LEVEL ${n} – Math`,
@@ -555,7 +590,7 @@
       }
 
       if(stage === 3){
-        const threshold = (n % 4) + 3; // 3..6
+        const threshold = (n % 4) + 3;
         return {
           title: `LEVEL ${n} – If / Else`,
           story: storyBase[stage],
@@ -573,7 +608,7 @@
       }
 
       if(stage === 4){
-        const k = (n % 5) + 3; // 3..7
+        const k = (n % 5) + 3;
         const expected = Array.from({length:k}, (_,i)=>String(i+1)).join(" ");
         return {
           title: `LEVEL ${n} – Loops`,
@@ -587,8 +622,7 @@
         };
       }
 
-      // stage 5 functions
-      const val = (n % 6) + 2; // 2..7
+      const val = (n % 6) + 2;
       const expected = String(val * 2);
       return {
         title: `LEVEL ${n} – Functions`,
@@ -608,7 +642,6 @@
     }
 
     // ------------------ Badges / Achievements ------------------
-    // Simple + strong milestones (you can add more later)
     const BADGES = [
       { id:"solve_1",   name:"First Step",        desc:"Complete 1 level",   rule:(s)=> s.solvedLevels.length >= 1 },
       { id:"solve_5",   name:"Learner x5",        desc:"Complete 5 levels",  rule:(s)=> s.solvedLevels.length >= 5 },
@@ -623,11 +656,7 @@
       state.badges.push(badgeId);
       saveState();
       const b = BADGES.find(x=>x.id===badgeId);
-      if(b){
-        showToast("🏆 Achievement Unlocked!", `${b.name}\n${b.desc}`);
-      } else {
-        showToast("🏆 Achievement Unlocked!", badgeId);
-      }
+      showToast("🏆 Achievement Unlocked!", b ? `${b.name}\n${b.desc}` : badgeId);
       return true;
     }
 
@@ -674,10 +703,7 @@
       hintsLeft = getHintsLeftForLevel(levelNum, currentLevel.hintBudget);
       hintBtn.textContent = `Hint (${hintsLeft} left)`;
 
-      // EX button unlock rule:
-      // - visible ONLY when hintsLeft becomes 0
       exBtn.style.display = "none";
-
       updateTopStats();
     }
 
@@ -690,13 +716,11 @@
 
     function updateProfile(){
       setWelcome();
-
       pSolved.textContent = state.solvedLevels.length;
       pXp.textContent = state.xp;
       pHints.textContent = state.hintsUsedTotal;
       pCurrent.textContent = state.currentLevel;
 
-      // recent levels
       recentLevelsEl.innerHTML = "";
       const recent = state.solvedLevels.slice(-10).reverse();
       if(recent.length === 0){
@@ -713,7 +737,6 @@
         }
       }
 
-      // badges list
       badgeListEl.innerHTML = "";
       for(const b of BADGES){
         const earned = state.badges.includes(b.id);
@@ -727,6 +750,59 @@
           </div>
         `;
         badgeListEl.appendChild(div);
+      }
+    }
+
+    // ------------------ Leaderboard ------------------
+    async function loadLeaderboard(){
+      lbStatus.textContent = "Loading leaderboard...";
+      leaderList.innerHTML = "";
+      await ensureAnonAuth();
+
+      try{
+        const colRef = collection(db, "profiles_public");
+        const qy = query(colRef, orderBy("xp", "desc"), limit(10));
+        const snap = await getDocs(qy);
+
+        if(snap.empty){
+          lbStatus.textContent = "No players yet. Solve a level to appear here!";
+          return;
+        }
+
+        let rank = 1;
+        snap.forEach((docSnap) => {
+          const d = docSnap.data();
+          const name = d.name || "Unknown";
+          const xp = d.xp ?? 0;
+          const solved = d.solved ?? 0;
+          const lvl = d.currentLevel ?? 1;
+
+          const row = document.createElement("div");
+          row.className = "card";
+          row.style.margin = "0";
+          row.innerHTML = `
+            <div class="row">
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <div class="pill">#${rank}</div>
+                <div><b>${name}</b></div>
+                ${rank === 1 ? `<div class="pill">👑 Champion</div>` : ""}
+              </div>
+              <div class="right">
+                <span class="pill">⭐ XP: <b>${xp}</b></span>
+                <span class="pill">✅ Solved: <b>${solved}</b></span>
+                <span class="pill">🔥 Level: <b>${lvl}</b></span>
+              </div>
+            </div>
+          `;
+          leaderList.appendChild(row);
+          rank++;
+        });
+
+        lbStatus.textContent = "✅ Updated.";
+      } catch (e){
+        lbStatus.textContent =
+          "❌ Leaderboard failed. If console says 'index required', create it from the link shown there.";
+        console.warn("Leaderboard error:", e);
       }
     }
 
@@ -754,7 +830,6 @@
       }
 
       updateTopStats();
-      // sync profile (optional, but nice)
       syncProfileToFirebase().catch(()=>{});
     };
 
@@ -782,7 +857,6 @@
     };
 
     submitBtn.onclick = async () => {
-      // Must have name before playing seriously (school-friendly)
       if(!state.name){
         showNameModal();
         return;
@@ -798,17 +872,14 @@
         const passed = currentLevel.validate(py, rawOut);
 
         if(passed){
-          // mark solved only once
           if(!state.solvedLevels.includes(state.currentLevel)){
             state.solvedLevels.push(state.currentLevel);
           }
 
-          // XP reward: base + bonus for unused hints
           const bonus = Math.max(0, hintsLeft);
           state.xp += 10 + bonus;
 
           saveState();
-
           alert(`✅ Successfully completed LEVEL ${state.currentLevel}!`);
 
           state.currentLevel += 1;
@@ -817,7 +888,6 @@
           checkBadges();
           updateTopStats();
 
-          // Sync profile to Firebase (global)
           await ensureAnonAuth();
           await syncProfileToFirebase();
 
@@ -843,13 +913,10 @@
         await signInAnonymously(auth);
         anonReady = true;
       }catch(e){
-        // If admin is logged in, anonymous sign-in isn't needed
         anonReady = true;
       }
     }
 
-    // Global visit count: increments on each page load.
-    // (If you want "count once per day per browser" to prevent refresh spam, tell me.)
     async function incrementGlobalVisit(){
       const statsRef = doc(db, "stats", "global");
       await runTransaction(db, async (tx) => {
@@ -868,7 +935,6 @@
     }
 
     async function syncProfileToFirebase(){
-      // Save a searchable profile doc for admin search
       if(!state.name) return;
       const user = auth.currentUser;
       if(!user) return;
@@ -887,7 +953,6 @@
         updatedAt: serverTimestamp(),
       };
 
-      // Store in profiles_public for admin searching by nameLower
       await setDoc(doc(db, "profiles_public", uid), payload, { merge:true });
     }
 
@@ -908,7 +973,12 @@
         await signInWithEmailAndPassword(auth, (adminEmail.value || "").trim(), adminPass.value || "");
         isAdminLoggedIn = true;
         adminStatus.textContent = "✅ Admin logged in.";
-        await readGlobalVisits();
+        try {
+          await readGlobalVisits();
+        } catch (e) {
+          adminStatus.textContent = "✅ Admin logged in (but visits read blocked). Check Firestore Rules.";
+          console.warn("Visits read error:", e);
+        }
       }catch(e){
         isAdminLoggedIn = false;
         adminStatus.textContent = "❌ Login failed: " + (e?.message || e);
@@ -938,7 +1008,6 @@
           return;
         }
 
-        // show first result
         const d = snap.docs[0].data();
         devResult.textContent =
           `FOUND PROFILE\n\n` +
@@ -960,18 +1029,10 @@
       showNameModal();
     }
 
-    // show initial stats
     updateTopStats();
     loadLevel(state.currentLevel);
-
-    // views default
     showPlay();
 
-    // Start Firebase flow:
-    // 1) anonymous sign-in
-    // 2) increment visits
-    // 3) read visits
-    // 4) sync profile if already has name
     (async () => {
       try{
         await ensureAnonAuth();
@@ -981,7 +1042,6 @@
           await syncProfileToFirebase();
         }
       }catch(e){
-        // If Firebase fails, game still works locally
         globalVisitsEl.textContent = "offline";
         console.warn("Firebase init error:", e);
       }
