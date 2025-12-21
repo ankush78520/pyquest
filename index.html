@@ -867,37 +867,25 @@
     }
 
     function showDev(){
-      playView.style.display = "none";
-      profileView.style.display = "none";
-      leaderView.style.display = "none";
-      devView.style.display = "block";
-      adminStatus.textContent = "Please login to use Dev Ctrl.";
-      devResult.textContent = "Login first, then search a username.";
-      devXpStatus.textContent = "";
-      devPwStatus.textContent = "";
-    }
+     navPlay.onclick = showPlay;
+navProfile.onclick = () => showProfile();
+navLeaderboard.onclick = () => showLeaderboard();
 
-    navPlay.onclick = showPlay;
-    navProfile.onclick = () => showProfile();
-    navLeaderboard.onclick = () => showLeaderboard();
+devBtn.onclick = showDev;
+devClose.onclick = showPlay;
 
-    const devBtn = document.getElementById("devBtn");
-    devBtn.onclick = showDev;
-    const devClose = document.getElementById("devClose");
-    devClose.onclick = showPlay;
+navLogout.onclick = () => {
+  const ok = confirm("Logout? Your progress stays online, you can login again with username+PIN.");
+  if(!ok) return;
+  localStorage.removeItem(SESSION_KEY);
+  sessionUser = "";
+  state = defaultState();
+  setWelcome();
+  showLoginModal();
+};
 
-    navLogout.onclick = () => {
-      const ok = confirm("Logout? Your progress stays online, you can login again with username+PIN.");
-      if(!ok) return;
-      localStorage.removeItem(SESSION_KEY);
-      sessionUser = "";
-      state = defaultState();
-      setWelcome();
-      showLoginModal();
-    };
+backToPlay.onclick = showPlay;
 
-    const backToPlay = document.getElementById("backToPlay");
-    backToPlay.onclick = showPlay;
 
     // ---------- Login modal ----------
     function showLoginModal(){
