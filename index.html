@@ -380,6 +380,35 @@
         </div>
         <pre id="devResult" style="margin-top:10px; min-height:120px;"></pre>
       </div>
+
+      <!-- ✅ NEW: GIVE XP -->
+      <div class="card" style="margin-top:12px;">
+        <b>🎁 Give XP to a student</b>
+        <div class="help">Adds XP to a username. (Global, stored in Firestore)</div>
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+          <input id="devXpUser" placeholder="Username e.g., ankush" style="flex:1; min-width:220px;">
+          <input id="devXpAmount" type="number" placeholder="XP e.g., 100" style="width:200px;">
+          <button class="btn primary" id="devGiveXpBtn">Send XP</button>
+        </div>
+        <div class="help" id="devXpStatus"></div>
+      </div>
+
+      <!-- ✅ NEW: GIVE POWERUPS -->
+      <div class="card" style="margin-top:12px;">
+        <b>⚡ Give Powerups to a student</b>
+        <div class="help">Adds powerups (Hint / Reveal / Skip) to a username.</div>
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+          <input id="devPwUser" placeholder="Username e.g., ankush" style="flex:1; min-width:220px;">
+          <select id="devPwType" style="width:220px;">
+            <option value="hint">⚡ +Hint</option>
+            <option value="reveal">👁️ Reveal</option>
+            <option value="skip">⏭️ Skip</option>
+          </select>
+          <input id="devPwAmount" type="number" placeholder="Amount e.g., 2" style="width:200px;">
+          <button class="btn primary" id="devGivePwBtn">Send Powerup</button>
+        </div>
+        <div class="help" id="devPwStatus"></div>
+      </div>
     </div>
   </div>
 
@@ -598,6 +627,18 @@
     const devSearch = document.getElementById("devSearch");
     const devSearchBtn = document.getElementById("devSearchBtn");
     const devResult = document.getElementById("devResult");
+
+    // ✅ NEW Dev Ctrl refs
+    const devXpUser = document.getElementById("devXpUser");
+    const devXpAmount = document.getElementById("devXpAmount");
+    const devGiveXpBtn = document.getElementById("devGiveXpBtn");
+    const devXpStatus = document.getElementById("devXpStatus");
+
+    const devPwUser = document.getElementById("devPwUser");
+    const devPwType = document.getElementById("devPwType");
+    const devPwAmount = document.getElementById("devPwAmount");
+    const devGivePwBtn = document.getElementById("devGivePwBtn");
+    const devPwStatus = document.getElementById("devPwStatus");
 
     // ---------- helpers ----------
     function showToast(title, msg){
@@ -832,14 +873,17 @@
       devView.style.display = "block";
       adminStatus.textContent = "Please login to use Dev Ctrl.";
       devResult.textContent = "Login first, then search a username.";
+      devXpStatus.textContent = "";
+      devPwStatus.textContent = "";
     }
 
     navPlay.onclick = showPlay;
     navProfile.onclick = () => showProfile();
     navLeaderboard.onclick = () => showLeaderboard();
-    backToPlay.onclick = showPlay;
 
+    const devBtn = document.getElementById("devBtn");
     devBtn.onclick = showDev;
+    const devClose = document.getElementById("devClose");
     devClose.onclick = showPlay;
 
     navLogout.onclick = () => {
@@ -851,6 +895,9 @@
       setWelcome();
       showLoginModal();
     };
+
+    const backToPlay = document.getElementById("backToPlay");
+    backToPlay.onclick = showPlay;
 
     // ---------- Login modal ----------
     function showLoginModal(){
@@ -891,11 +938,9 @@
       s.lastSolveMs = profile.lastSolveMs ?? null;
       s.rewardTiers = profile.rewardTiers || {hint:0,reveal:0,skip:0};
 
-      // Progress migration: support old fields currentLevel/perLevelHintsLeft
       const pb = profile.progressByTrack || null;
       if(pb){
         s.progressByTrack = pb;
-        // ensure all modes exist
         for(const k of ["learn","beginner","moderate","pro"]){
           if(!s.progressByTrack[k]) s.progressByTrack[k] = emptyProgress();
           if(!s.progressByTrack[k].currentLevel) s.progressByTrack[k].currentLevel = 1;
@@ -908,9 +953,7 @@
         s.progressByTrack.learn.perLevelHintsLeft = oldHints;
       }
 
-      // If track missing progress, fix
       if(!s.progressByTrack[s.track]) s.progressByTrack[s.track] = emptyProgress();
-
       return s;
     }
 
@@ -934,7 +977,6 @@
         progressByTrack: state.progressByTrack,
         rewardTiers: state.rewardTiers,
 
-        // leaderboard helper fields
         solved: state.solvedLevels.length,
         updatedAt: serverTimestamp(),
       };
@@ -1119,6 +1161,7 @@
           `Track: ${trackLabel(prof.track || "learn")}\n` +
           `Solved: ${prof.solved ?? (prof.solvedLevels?.length || 0)}\n` +
           `XP: ${prof.xp ?? 0}\n` +
+          `PowerUps: ${JSON.stringify(prof.powerUps || {hint:0,reveal:0,skip:0}, null, 2)}\n\n` +
           `Learn Stage: ${prof.progressByTrack?.learn?.currentLevel ?? prof.currentLevel ?? 1}\n` +
           `Beginner Stage: ${prof.progressByTrack?.beginner?.currentLevel ?? 1}\n` +
           `Moderate Stage: ${prof.progressByTrack?.moderate?.currentLevel ?? 1}\n` +
@@ -1128,9 +1171,74 @@
       }
     };
 
+    // ✅ NEW: Admin Give XP
+    devGiveXpBtn.onclick = async () => {
+      if(!isAdminLoggedIn){
+        devXpStatus.textContent = "❌ Admin login required.";
+        return;
+      }
+      const u = cleanUsername(devXpUser.value);
+      const amt = Number(devXpAmount.value);
+      if(!u){ devXpStatus.textContent = "❌ Enter a username."; return; }
+      if(!Number.isFinite(amt) || amt <= 0){ devXpStatus.textContent = "❌ Enter valid XP amount."; return; }
+
+      devXpStatus.textContent = "Sending...";
+      try{
+        const userRef = doc(db, USERS_COL, u);
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(userRef);
+          if(!snap.exists()) throw new Error("NOT_FOUND");
+          const d = snap.data() || {};
+          const newXp = (d.xp || 0) + amt;
+          tx.set(userRef, { xp: newXp, updatedAt: serverTimestamp() }, { merge:true });
+        });
+        devXpStatus.textContent = `✅ Added ${amt} XP to ${u}`;
+      } catch(e){
+        if(String(e?.message || e).includes("NOT_FOUND")){
+          devXpStatus.textContent = "❌ User not found.";
+        } else {
+          devXpStatus.textContent = "❌ Failed: " + (e?.message || e);
+        }
+      }
+    };
+
+    // ✅ NEW: Admin Give Powerups
+    devGivePwBtn.onclick = async () => {
+      if(!isAdminLoggedIn){
+        devPwStatus.textContent = "❌ Admin login required.";
+        return;
+      }
+      const u = cleanUsername(devPwUser.value);
+      const type = (devPwType.value || "").trim();
+      const amt = Number(devPwAmount.value);
+
+      if(!u){ devPwStatus.textContent = "❌ Enter a username."; return; }
+      if(!["hint","reveal","skip"].includes(type)){ devPwStatus.textContent = "❌ Choose powerup type."; return; }
+      if(!Number.isFinite(amt) || amt <= 0){ devPwStatus.textContent = "❌ Enter valid amount."; return; }
+
+      devPwStatus.textContent = "Sending...";
+      try{
+        const userRef = doc(db, USERS_COL, u);
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(userRef);
+          if(!snap.exists()) throw new Error("NOT_FOUND");
+          const d = snap.data() || {};
+          const pu = d.powerUps || { hint:0, reveal:0, skip:0 };
+          pu[type] = (pu[type] || 0) + amt;
+          tx.set(userRef, { powerUps: pu, updatedAt: serverTimestamp() }, { merge:true });
+        });
+        devPwStatus.textContent = `✅ Added ${amt} × ${type.toUpperCase()} to ${u}`;
+      } catch(e){
+        if(String(e?.message || e).includes("NOT_FOUND")){
+          devPwStatus.textContent = "❌ User not found.";
+        } else {
+          devPwStatus.textContent = "❌ Failed: " + (e?.message || e);
+        }
+      }
+    };
+
     // ---------- Global visits ----------
     async function incrementGlobalVisitOncePerTab(){
-      // Count once per tab session to avoid refresh spam
       const key = "pyquest_counted_visit";
       if(sessionStorage.getItem(key) === "1") return;
       sessionStorage.setItem(key, "1");
@@ -1211,7 +1319,6 @@
         if(amIChampion) profileCrown.classList.add("show");
         else profileCrown.classList.remove("show");
 
-        // Popup ONLY if you just became champion
         if(amIChampion && !state.isChampion){
           state.isChampion = true;
           showToast("👑 You are #1!", "You are currently TOP 1 on the global leaderboard!");
@@ -1254,7 +1361,7 @@
 
     // ---------- Difficulty auto adjustment ----------
     function adjustDifficulty({solveMs, hintsUsedThisStage}){
-      if(state.track === "learn") return; // learn mode keeps it simple
+      if(state.track === "learn") return;
       let delta = 0;
       if(solveMs != null){
         if(solveMs < 45000 && hintsUsedThisStage <= 1) delta += 1;
@@ -1267,7 +1374,6 @@
 
     // ---------- XP Milestone Rewards ----------
     function grantMilestoneRewards(){
-      // Every 150 XP => +1 Hint token
       const hintTierNow = Math.floor(state.xp / 150);
       while(state.rewardTiers.hint < hintTierNow){
         state.rewardTiers.hint++;
@@ -1275,7 +1381,6 @@
         showToast("🎁 Milestone Reward", "You earned +1 Hint Token (150 XP milestone).");
       }
 
-      // Every 300 XP => +1 Reveal token
       const revealTierNow = Math.floor(state.xp / 300);
       while(state.rewardTiers.reveal < revealTierNow){
         state.rewardTiers.reveal++;
@@ -1283,7 +1388,6 @@
         showToast("🎁 Milestone Reward", "You earned +1 Reveal Token (300 XP milestone).");
       }
 
-      // Every 600 XP => +1 Skip token
       const skipTierNow = Math.floor(state.xp / 600);
       while(state.rewardTiers.skip < skipTierNow){
         state.rewardTiers.skip++;
@@ -1316,7 +1420,6 @@
     }
 
     // ---------- 25 Learn Python Lessons ----------
-    // Structure: each topic has lesson + 2 questions (Q1, Q2)
     const LEARN_CURRICULUM = [
       { name:"print()", lesson:"📘 Lesson 1: print()\nUse print(...) to show output.\nExample:\nprint('Hello')",
         q1:{ prompt:"Print exactly: HELLO", starter:"# Write code\n", hints:["Use print('HELLO')","Quotes matter"], exampleCode:"print('HI')", expected:"HELLO",
@@ -1389,32 +1492,31 @@
              expected:"4", explainKeywords:["len"], explainMe:"len(list) gives number of items." }
       },
       { name:"indexing", lesson:"📘 Lesson 12: Indexing\nFirst item is index 0.\nnums[0] gets first item.",
-  q1:{ prompt:"nums=[10,20,30]. Print nums[1]", starter:"# Write code\n", hints:["nums[1] is 20"], exampleCode:"a=[1,2]\nprint(a[0])",
-       expected:"20", explainKeywords:["index","[1]"], explainMe:"Index 1 means the second item." },
-  q2:{ prompt:"words=['a','b','c']. Print last item using index", starter:"# Write code\n", hints:["last index is -1"], exampleCode:"w=['x']\nprint(w[-1])",
-       expected:"c", explainKeywords:["-1","last"], explainMe:"Index -1 means last element." }
-},
-{ name:"slicing", lesson:"📘 Lesson 13: Slicing\nnums[1:3] gives items 1 and 2.",
-  q1:{ prompt:"nums=[0,1,2,3,4]. Print nums[1:4]", starter:"# Write code\n",
-       hints:["slice 1:4 gives 1,2,3"], exampleCode:"a=[0,1,2]\nprint(a[1:3])", expected:"[1, 2, 3]",
-       explainKeywords:["slice","1:4"], explainMe:"Slice end index is not included." },
-  q2:{ prompt:"nums=[0,1,2,3,4]. Print nums[:2]", starter:"# Write code\n",
-       hints:["nums[:2] gives 0,1"], exampleCode:"a=[9,8,7]\nprint(a[:2])", expected:"[0, 1]",
-       explainKeywords:[":2"], explainMe:"Slice from start to index 2 (not included)." }
-},
-{ name:"list_methods", lesson:"📘 Lesson 14: append() and pop()\nappend adds, pop removes last.",
-  q1:{ prompt:"a=[1,2]. Append 3 then print a", starter:"# Write code\n", hints:["a.append(3)"], exampleCode:"a=[]\na.append(5)\nprint(a)",
-       expected:"[1, 2, 3]", explainKeywords:["append"], explainMe:"append adds item to the end." },
-  q2:{ prompt:"a=[1,2,3]. Pop once then print a", starter:"# Write code\n", hints:["a.pop() removes last"], exampleCode:"a=[1,2]\na.pop()\nprint(a)",
-       expected:"[1, 2]", explainKeywords:["pop"], explainMe:"pop removes and returns last item." }
-},
-{ name:"for_loop", lesson:"📘 Lesson 15: for loops\nfor i in range(1,4):\n  print(i)",
-  q1:{ prompt:"Print 1 2 3 using a for loop", starter:"# Write code\n", hints:["range(1,4)"], exampleCode:"for i in range(1,3):\n print(i)",
-       expected:"1 2 3", explainKeywords:["for","range"], explainMe:"Loop prints each value of i." },
-  q2:{ prompt:"Sum 1..5 in a loop and print the sum", starter:"# Write code\n", hints:["total=0","total+=i"], exampleCode:"t=0\nfor i in range(1,4):\n t+=i\nprint(t)",
-       expected:"15", explainKeywords:["+=","total"], explainMe:"Add i to total each iteration." }
-},
-
+        q1:{ prompt:"nums=[10,20,30]. Print nums[1]", starter:"# Write code\n", hints:["nums[1] is 20"], exampleCode:"a=[1,2]\nprint(a[0])",
+             expected:"20", explainKeywords:["index","[1]"], explainMe:"Index 1 means the second item." },
+        q2:{ prompt:"words=['a','b','c']. Print last item using index", starter:"# Write code\n", hints:["last index is -1"], exampleCode:"w=['x']\nprint(w[-1])",
+             expected:"c", explainKeywords:["-1","last"], explainMe:"Index -1 means last element." }
+      },
+      { name:"slicing", lesson:"📘 Lesson 13: Slicing\nnums[1:3] gives items 1 and 2.",
+        q1:{ prompt:"nums=[0,1,2,3,4]. Print nums[1:4]", starter:"# Write code\n",
+             hints:["slice 1:4 gives 1,2,3"], exampleCode:"a=[0,1,2]\nprint(a[1:3])", expected:"[1, 2, 3]",
+             explainKeywords:["slice","1:4"], explainMe:"Slice end index is not included." },
+        q2:{ prompt:"nums=[0,1,2,3,4]. Print nums[:2]", starter:"# Write code\n",
+             hints:["nums[:2] gives 0,1"], exampleCode:"a=[9,8,7]\nprint(a[:2])", expected:"[0, 1]",
+             explainKeywords:[":2"], explainMe:"Slice from start to index 2 (not included)." }
+      },
+      { name:"list_methods", lesson:"📘 Lesson 14: append() and pop()\nappend adds, pop removes last.",
+        q1:{ prompt:"a=[1,2]. Append 3 then print a", starter:"# Write code\n", hints:["a.append(3)"], exampleCode:"a=[]\na.append(5)\nprint(a)",
+             expected:"[1, 2, 3]", explainKeywords:["append"], explainMe:"append adds item to the end." },
+        q2:{ prompt:"a=[1,2,3]. Pop once then print a", starter:"# Write code\n", hints:["a.pop() removes last"], exampleCode:"a=[1,2]\na.pop()\nprint(a)",
+             expected:"[1, 2]", explainKeywords:["pop"], explainMe:"pop removes and returns last item." }
+      },
+      { name:"for_loop", lesson:"📘 Lesson 15: for loops\nfor i in range(1,4):\n  print(i)",
+        q1:{ prompt:"Print 1 2 3 using a for loop", starter:"# Write code\n", hints:["range(1,4)"], exampleCode:"for i in range(1,3):\n print(i)",
+             expected:"1 2 3", explainKeywords:["for","range"], explainMe:"Loop prints each value of i." },
+        q2:{ prompt:"Sum 1..5 in a loop and print the sum", starter:"# Write code\n", hints:["total=0","total+=i"], exampleCode:"t=0\nfor i in range(1,4):\n t+=i\nprint(t)",
+             expected:"15", explainKeywords:["+=","total"], explainMe:"Add i to total each iteration." }
+      },
       { name:"while loop", lesson:"📘 Lesson 16: while loops\nRepeat while condition is True.\nBe careful to update variable.",
         q1:{ prompt:"Use while to print 1 2 3", starter:"# Write code\n", hints:["i=1","while i<=3:","i+=1"], exampleCode:"i=1\nwhile i<=2:\n print(i)\n i+=1",
              expected:"1 2 3", explainKeywords:["while","i+=1"], explainMe:"Increase i so loop ends." },
@@ -1486,10 +1588,9 @@
     ];
 
     // ---------- Level generator ----------
-    // Learn track stages: for each topic => (Lesson Screen) + Q1 + Q2 (3 stages)
     function makeLearnStage(stageNumber){
       const topicIndex = Math.floor((stageNumber - 1) / 3) % LEARN_CURRICULUM.length;
-      const stageInTopic = (stageNumber - 1) % 3; // 0 = lesson, 1=q1, 2=q2
+      const stageInTopic = (stageNumber - 1) % 3;
       const topic = LEARN_CURRICULUM[topicIndex];
 
       if(stageInTopic === 0){
@@ -1517,7 +1618,7 @@
         story: "Solve it to continue.",
         prompt: q.prompt,
         starter: q.starter,
-        hintBudget: 10, // Learn mode hints: 10 per mission
+        hintBudget: 10,
         hints: q.hints,
         exampleCode: q.exampleCode,
         expectedOutput: q.expected,
@@ -1528,7 +1629,6 @@
       };
     }
 
-    // Beginner / Moderate / Pro infinite stage generators
     function scaledNumbers(){
       const s = state.skill || 1;
       return {
@@ -1587,7 +1687,6 @@
           validate:(_py,out)=> normalizeOutput(out)==="YES"
         };
       }
-      // stage 3: for loop
       const { loopMax } = scaledNumbers();
       const m = Math.min(8, loopMax + 2);
       return {
@@ -1642,7 +1741,6 @@
           validate:(_py,out)=> normalizeOutput(out)==="6"
         };
       }
-      // stage 2
       return {
         title:`MODERATE • Stage ${n} – String`,
         story:"String mission.",
@@ -1989,7 +2087,7 @@
           if(!state.solvedLevels.includes(cur)) state.solvedLevels.push(cur);
 
           const bonusHints = Math.max(0, hintsLeft);
-          const baseXp = 10 + bonusHints; // reward for leftover hints (encourage fewer hints)
+          const baseXp = 10 + bonusHints;
 
           const solveMs = Date.now() - stageStartTime;
           state.lastSolveMs = solveMs;
@@ -2024,11 +2122,8 @@
         return;
       }
 
-      // Save current stage UI + switch
       state.track = newTrack;
       if(!state.progressByTrack[newTrack]) state.progressByTrack[newTrack] = emptyProgress();
-
-      // Learn mode uses lower skill
       if(state.track === "learn") state.skill = 1;
 
       switchMsg.textContent = `✅ Switched to ${trackLabel(newTrack)}.`;
@@ -2056,16 +2151,10 @@
       showPlay();
     };
 
-    // ---------- Navigation ----------
-    navPlay.onclick = showPlay;
-    navProfile.onclick = () => showProfile();
-    navLeaderboard.onclick = () => showLeaderboard();
-
     // ---------- Startup ----------
     async function boot(){
       await ensureAnonAuth();
 
-      // visits
       try{
         await incrementGlobalVisitOncePerTab();
         await readGlobalVisits();
@@ -2073,7 +2162,6 @@
         globalVisitsEl.textContent = "offline";
       }
 
-      // session login
       if(sessionUser){
         try{
           const prof = await loadUserProfile(sessionUser);
@@ -2094,11 +2182,9 @@
       showLoginModal();
     }
 
-    // show initial view
     showPlay();
     boot();
 
-    // periodic refresh
     setInterval(async () => {
       if(!state.username) return;
       try{ await readGlobalVisits(); } catch {}
