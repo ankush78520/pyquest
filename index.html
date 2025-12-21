@@ -381,7 +381,6 @@
         <pre id="devResult" style="margin-top:10px; min-height:120px;"></pre>
       </div>
 
-      <!-- ✅ NEW: GIVE XP -->
       <div class="card" style="margin-top:12px;">
         <b>🎁 Give XP to a student</b>
         <div class="help">Adds XP to a username. (Global, stored in Firestore)</div>
@@ -393,7 +392,6 @@
         <div class="help" id="devXpStatus"></div>
       </div>
 
-      <!-- ✅ NEW: GIVE POWERUPS -->
       <div class="card" style="margin-top:12px;">
         <b>⚡ Give Powerups to a student</b>
         <div class="help">Adds powerups (Hint / Reveal / Skip) to a username.</div>
@@ -716,8 +714,8 @@
 
     function emptyProgress(){
       return {
-        currentLevel: 1,          // stage number in that mode
-        perLevelHintsLeft: {},    // stage->hints left
+        currentLevel: 1,
+        perLevelHintsLeft: {},
       };
     }
 
@@ -726,7 +724,7 @@
         username: "",
         track: "learn",
         xp: 0,
-        solvedLevels: [],     // list of solved stage numbers (global; for badges)
+        solvedLevels: [],
         skippedLevels: [],
         badges: [],
         hintsUsedTotal: 0,
@@ -735,7 +733,6 @@
         lastSolveMs: null,
         isChampion: false,
 
-        // ✅ separate progress per mode (so switching works nicely)
         progressByTrack: {
           learn: emptyProgress(),
           beginner: emptyProgress(),
@@ -743,8 +740,7 @@
           pro: emptyProgress(),
         },
 
-        // ✅ XP milestone rewards tracking
-        rewardTiers: { hint: 0, reveal: 0, skip: 0 }, // how many tiers already granted
+        rewardTiers: { hint: 0, reveal: 0, skip: 0 },
       };
     }
 
@@ -866,26 +862,38 @@
       await refreshChampionStatus();
     }
 
+    // ✅ FIXED: Dev view (your previous code broke here)
     function showDev(){
-     navPlay.onclick = showPlay;
-navProfile.onclick = () => showProfile();
-navLeaderboard.onclick = () => showLeaderboard();
+      playView.style.display = "none";
+      profileView.style.display = "none";
+      leaderView.style.display = "none";
+      devView.style.display = "block";
 
-devBtn.onclick = showDev;
-devClose.onclick = showPlay;
+      // If admin already logged in, refresh visits display
+      if(isAdminLoggedIn){
+        readGlobalVisits().catch(()=>{});
+      }
+    }
 
-navLogout.onclick = () => {
-  const ok = confirm("Logout? Your progress stays online, you can login again with username+PIN.");
-  if(!ok) return;
-  localStorage.removeItem(SESSION_KEY);
-  sessionUser = "";
-  state = defaultState();
-  setWelcome();
-  showLoginModal();
-};
+    // ✅ FIXED: hook nav buttons ONCE (not inside showDev)
+    navPlay.onclick = showPlay;
+    navProfile.onclick = () => showProfile();
+    navLeaderboard.onclick = () => showLeaderboard();
 
-backToPlay.onclick = showPlay;
+    devBtn.onclick = showDev;
+    devClose.onclick = showPlay;
 
+    navLogout.onclick = () => {
+      const ok = confirm("Logout? Your progress stays online, you can login again with username+PIN.");
+      if(!ok) return;
+      localStorage.removeItem(SESSION_KEY);
+      sessionUser = "";
+      state = defaultState();
+      setWelcome();
+      showLoginModal();
+    };
+
+    backToPlay.onclick = showPlay;
 
     // ---------- Login modal ----------
     function showLoginModal(){
@@ -1159,7 +1167,7 @@ backToPlay.onclick = showPlay;
       }
     };
 
-    // ✅ NEW: Admin Give XP
+    // ✅ Admin Give XP
     devGiveXpBtn.onclick = async () => {
       if(!isAdminLoggedIn){
         devXpStatus.textContent = "❌ Admin login required.";
@@ -1190,7 +1198,7 @@ backToPlay.onclick = showPlay;
       }
     };
 
-    // ✅ NEW: Admin Give Powerups
+    // ✅ Admin Give Powerups
     devGivePwBtn.onclick = async () => {
       if(!isAdminLoggedIn){
         devPwStatus.textContent = "❌ Admin login required.";
@@ -2182,3 +2190,4 @@ backToPlay.onclick = showPlay;
   </script>
 </body>
 </html>
+
