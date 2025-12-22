@@ -1840,29 +1840,32 @@ t = (1,2,3)`,
            {
         name: "Dictionaries",
         lesson:
-`📘 Lesson 15: Dictionaries (dict)
-A dict stores key:value pairs:
+const LEARN_CURRICULUM = [
+  {
+    lessonTitle: "📘 Lesson 15: Dictionaries (dict)",
+    lessonText: `A dict stores key:value pairs:
 d = {"a":1, "b":2}
 print(d["a"]) -> 1`,
-        q1: {
-          prompt: 'Create d={"a":10,"b":20} and print d["b"]',
-          starter: "# Write code\n",
-          hints: ["Create dict with braces {}", 'Use print(d["b"])'],
-          exampleCode: 'd={"x":1,"y":2}\nprint(d["y"])',
-          expected: "20",
-          explainKeywords: ["dict", "key", "value"],
-          explainMe: "Use keys to access values in a dictionary."
-        },
-        q2: {
-       const LEARN_CURRICULUM = [
-  {
-    prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
-    starter: "# Write code\n",
-    hints: ['print("name="+d["name"])'],
-    exampleCode: 'd={"name":"X"}\nprint("name="+d["name"])',
-    expected: "name=PyQuest",
-    explainKeywords: ["dict", 'd["name"]', "concatenate"],
-    explainMe: "Get the value from dict using its key and join it into a string."
+
+    q1: {
+      prompt: 'Create d={"a":10,"b":20} and print d["b"]',
+      starter: "# Write code\n",
+      hints: ["Create dict with braces {}", 'Use print(d["b"])'],
+      exampleCode: 'd={"x":1,"y":2}\nprint(d["y"])',
+      expected: "20",
+      explainKeywords: ["dict", "key", "value"],
+      explainMe: "Use keys to access values in a dictionary."
+    },
+
+    q2: {
+      prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
+      starter: "# Write code\n",
+      hints: ['print("name="+d["name"])'],
+      exampleCode: 'd={"name":"X"}\nprint("name="+d["name"])',
+      expected: "name=PyQuest",
+      explainKeywords: ["dict", 'd["name"]', "concatenate"],
+      explainMe: "Get the value from dict using its key and join it into a string."
+    }
   }
 ];
 
