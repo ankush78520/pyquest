@@ -1843,6 +1843,7 @@ t = (1,2,3)`,
     "lesson": {
       "lessonTitle": "Lesson 15: Dictionaries (dict)",
       "lessonText": "A dict stores key:value pairs:\nd = {\"a\":1, \"b\":2}\nprint(d[\"a\"]) -> 1",
+
       "q1": {
         "prompt": "Create d={\"a\":10,\"b\":20} and print d[\"b\"]",
         "starter": "# Write code\n",
@@ -1854,24 +1855,24 @@ t = (1,2,3)`,
         "expected": "20",
         "explainKeywords": ["dict", "key", "value"],
         "explainMe": "Use keys to access values in a dictionary."
+      },
+
+      "q2": {
+        "prompt": "Create d={\"name\":\"PyQuest\"} and print: name=PyQuest",
+        "starter": "# Write code\n",
+        "hints": [
+          "Use d[\"name\"]",
+          "Use print(\"name=\" + d[\"name\"])"
+        ],
+        "exampleCode": "d={\"name\":\"X\"}\nprint(\"name=\" + d[\"name\"])",
+        "expected": "name=PyQuest",
+        "explainKeywords": ["dict", "d[\"name\"]", "concatenate"],
+        "explainMe": "Get the value from dict using its key and join it into a string."
       }
     }
   }
 ]
 
-
-
-    q2: {
-      prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
-      starter: "# Write code\n",
-      hints: ['print("name="+d["name"])'],
-      exampleCode: 'd={"name":"X"}\nprint("name="+d["name"])',
-      expected: "name=PyQuest",
-      explainKeywords: ["dict", 'd["name"]', "concatenate"],
-      explainMe: "Get the value from dict using its key and join it into a string."
-    }
-  }
-];
 
 
 
