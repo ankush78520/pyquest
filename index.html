@@ -1442,62 +1442,235 @@
     // ============================================================
     // ✅ LEARN CURRICULUM (you can paste the full 25 lessons here)
     // ============================================================
-    const LEARN_CURRICULUM = [
-      {
-        name: "print() basics",
-        lesson: `📘 Lesson 1: print()
-print(...) shows output on the screen.
+   const LEARN_CURRICULUM = [
+
+  {
+    name: "print() basics",
+    lesson: `📘 Lesson 1: print()
+Think of print() as talking to the computer.
+
+Whatever you put inside print(), Python will show it on the screen.
 
 Examples:
 print("HELLO")
 print(123)`,
-        q1: {
-          prompt: "Print exactly: HELLO",
-          starter: "# Write code\n",
-          hints: ["Use print('HELLO')", "Quotes matter"],
-          exampleCode: "print('HI')",
-          expected: "HELLO",
-          explainKeywords: ["print", "quotes"],
-          explainMe: "Use print with quotes to display text exactly."
-        },
-        q2: {
-          prompt: "Print on 2 lines:\nA\nB",
-          starter: "# Write code\n",
-          hints: ["Use two print lines", "First print A then print B"],
-          exampleCode: "print('A')\nprint('B')",
-          expected: "A B",
-          explainKeywords: ["print", "line"],
-          explainMe: "Two print calls produce two separate lines."
-        }
-      },
-      {
-        name: "Strings & quotes",
-        lesson: `📘 Lesson 2: Strings
-Strings are text inside quotes: "hello" or 'hello'
 
-You can print quotes using escape:
-print("He said \\"Hi\\"")`,
-        q1: {
-          prompt: `Print exactly: I love Python`,
-          starter: "# Write code\n",
-          hints: ["Use print('I love Python')"],
-          exampleCode: "print('I love Coding')",
-          expected: "I love Python",
-          explainKeywords: ["string", "quotes", "print"],
-          explainMe: "A string is text inside quotes."
-        },
-        q2: {
-          prompt: `Print exactly: He said "Hi"`,
-          starter: "# Write code\n",
-          hints: ["Use double quotes outside and escape inside", 'Example: print("He said \\"Hi\\"")'],
-          exampleCode: 'print("He said \\"Hello\\"")',
-          expected: 'He said "Hi"',
-          explainKeywords: ["escape", "\\", "quotes"],
-          explainMe: "Use \\\" to print a double quote inside a double-quoted string."
-        }
-      }
-      // (paste the rest of your 25 lessons here)
-    ];
+    q1: {
+      prompt: "Print exactly: HELLO",
+      starter: "# Write code\n",
+      hints: ["Use print('HELLO')", "Capital letters matter"],
+      exampleCode: "print('HI')",
+      expected: "HELLO",
+      explainKeywords: ["print"],
+      explainMe: "print() is used to show output on the screen."
+    },
+
+    q2: {
+      prompt: "Print on two lines:\nA\nB",
+      starter: "# Write code\n",
+      hints: ["Use two print statements"],
+      exampleCode: "print('A')\nprint('B')",
+      expected: "A B",
+      explainKeywords: ["print"],
+      explainMe: "Each print() prints on a new line."
+    }
+  },
+
+  {
+    name: "Strings & quotes",
+    lesson: `📘 Lesson 2: Strings
+A string is just text.
+
+Text must be inside quotes:
+"hello" or 'hello'
+
+If you want quotes inside text, you escape them.`,
+
+    q1: {
+      prompt: "Print exactly: I love Python",
+      starter: "# Write code\n",
+      hints: ["Use print('I love Python')"],
+      exampleCode: "print('I love Coding')",
+      expected: "I love Python",
+      explainKeywords: ["string"],
+      explainMe: "Strings are text written inside quotes."
+    },
+
+    q2: {
+      prompt: 'Print exactly: He said "Hi"',
+      starter: "# Write code\n",
+      hints: ["Use escape character \\"],
+      exampleCode: 'print("He said \\"Hello\\"")',
+      expected: 'He said "Hi"',
+      explainKeywords: ["escape"],
+      explainMe: "The backslash lets you use quotes inside a string."
+    }
+  },
+
+  {
+    name: "Numbers & math",
+    lesson: `📘 Lesson 3: Numbers
+Python can do math like a calculator.
+
++ add
+- subtract
+* multiply
+/ divide`,
+
+    q1: {
+      prompt: "Print the result of 5 + 7",
+      starter: "# Write code\n",
+      hints: ["Use print(5+7)"],
+      exampleCode: "print(2+3)",
+      expected: "12",
+      explainKeywords: ["+"],
+      explainMe: "Use + to add numbers."
+    },
+
+    q2: {
+      prompt: "Print the result of 10 * 3",
+      starter: "# Write code\n",
+      hints: ["Use * for multiplication"],
+      exampleCode: "print(4*2)",
+      expected: "30",
+      explainKeywords: ["*"],
+      explainMe: "* multiplies numbers."
+    }
+  },
+
+  {
+    name: "Variables",
+    lesson: `📘 Lesson 4: Variables
+A variable is like a box that stores a value.
+
+Example:
+x = 10
+print(x)`,
+
+    q1: {
+      prompt: "Create x = 8 and print x",
+      starter: "# Write code\n",
+      hints: ["x = 8", "print(x)"],
+      exampleCode: "x=3\nprint(x)",
+      expected: "8",
+      explainKeywords: ["variable"],
+      explainMe: "Variables store values so we can reuse them."
+    },
+
+    q2: {
+      prompt: "Create a=5 and b=6, then print a+b",
+      starter: "# Write code\n",
+      hints: ["a=5", "b=6", "print(a+b)"],
+      exampleCode: "a=1\nb=2\nprint(a+b)",
+      expected: "11",
+      explainKeywords: ["variable", "+"],
+      explainMe: "You can do math using variables."
+    }
+  },
+
+  {
+    name: "Input from user",
+    lesson: `📘 Lesson 5: input()
+input() lets the user type something.
+
+Example:
+name = input()
+print(name)`,
+
+    q1: {
+      prompt: "Take input and print it",
+      starter: "# Write code\n",
+      hints: ["Use input()", "Then print the value"],
+      exampleCode: "x=input()\nprint(x)",
+      expected: "", // any input accepted
+      explainKeywords: ["input"],
+      explainMe: "input() waits for the user to type something."
+    },
+
+    q2: {
+      prompt: "Ask name and print: Hello <name>",
+      starter: "# Write code\n",
+      hints: ["Use input()", "Use print()"],
+      exampleCode: 'name=input()\nprint("Hello", name)',
+      expected: "",
+      explainKeywords: ["input", "print"],
+      explainMe: "We can combine input with print to talk to users."
+    }
+  },
+
+  {
+    name: "If conditions",
+    lesson: `📘 Lesson 6: if
+if checks a condition.
+
+If it is true, code runs.
+
+Example:
+if 5 > 3:
+  print("Yes")`,
+
+    q1: {
+      prompt: "If 10 > 5 print YES",
+      starter: "# Write code\n",
+      hints: ["Use if", "Use >"],
+      exampleCode: 'if 3>1:\n print("YES")',
+      expected: "YES",
+      explainKeywords: ["if"],
+      explainMe: "if runs code only when condition is true."
+    },
+
+    q2: {
+      prompt: "If 2 > 5 print OK",
+      starter: "# Write code\n",
+      hints: ["Condition is false"],
+      exampleCode: 'if 10>5:\n print("OK")',
+      expected: "",
+      explainKeywords: ["if"],
+      explainMe: "If condition is false, nothing runs."
+    }
+  },
+
+  {
+    name: "Loops (for)",
+    lesson: `📘 Lesson 7: for loop
+Loops repeat code.
+
+Example:
+for i in range(3):
+  print(i)`,
+
+    q1: {
+      prompt: "Print numbers 1 to 3 using loop",
+      starter: "# Write code\n",
+      hints: ["Use range(1,4)"],
+      exampleCode: "for i in range(2):\n print(i)",
+      expected: "1 2 3",
+      explainKeywords: ["for", "range"],
+      explainMe: "for loop repeats code multiple times."
+    },
+
+    q2: {
+      prompt: "Print HELLO three times",
+      starter: "# Write code\n",
+      hints: ["Use loop"],
+      exampleCode: "for i in range(2):\n print('HELLO')",
+      expected: "HELLO HELLO HELLO",
+      explainKeywords: ["loop"],
+      explainMe: "Loop avoids writing same code again and again."
+    }
+  }
+
+  // 👉 You can now continue:
+  // Lists
+  // While loop
+  // Functions
+  // Lists methods
+  // Dictionaries
+  // Functions with return
+  // Try/except
+  // etc.
+];
+
 
     // ---------- Learn curriculum stage builder ----------
     function makeLearnStage(stageNumber){
