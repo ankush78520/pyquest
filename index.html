@@ -1854,19 +1854,18 @@ print(d["a"]) -> 1`,
           explainMe: "Use keys to access values in a dictionary."
         },
         q2: {
-          prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
-          starter: "# Write code\n",
-          hints: ['print("name="+d["name"])'],
-          exampleCode: 'd={"name":"X"}\nprint("name="+d["name"])',
-          expected: "name=PyQuest",
-          explainKeywords: ["dict", 'd["name"]', "concatenate"],
-          explainMe: "Get the value from dict using its key and join it into a string."
-        }
-      }
-    ];
+       const LEARN_CURRICULUM = [
+  {
+    prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
+    starter: "# Write code\n",
+    hints: ['print("name="+d["name"])'],
+    exampleCode: 'd={"name":"X"}\nprint("name="+d["name"])',
+    expected: "name=PyQuest",
+    explainKeywords: ["dict", 'd["name"]', "concatenate"],
+    explainMe: "Get the value from dict using its key and join it into a string."
+  }
+];
 
-           }
-    ];
 
 
    // ---------- Learn curriculum stage builder ----------
