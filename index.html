@@ -1435,68 +1435,65 @@
     // ============================================================
     // ✅ YOUR 25 LESSONS (exactly as you pasted)
     // ============================================================
-    const LEARN_CURRICULUM = [
-      {
-        name: "print() basics",
-        lesson:
-`📘 Lesson 1: print()
+   const LEARN_CURRICULUM = [
+  {
+    name: "print() basics",
+    lesson: `📘 Lesson 1: print()
 print(...) shows output on the screen.
 
 Examples:
 print("HELLO")
 print(123)`,
-        q1: {
-          prompt: "Print exactly: HELLO",
-          starter: "# Write code\n",
-          hints: ["Use print('HELLO')", "Quotes matter"],
-          exampleCode: "print('HI')",
-          expected: "HELLO",
-          explainKeywords: ["print", "quotes"],
-          explainMe: "Use print with quotes to display text exactly."
-        },
-        q2: {
-          prompt: "Print on 2 lines:\nA\nB",
-          starter: "# Write code\n",
-          hints: ["Use two print lines", "First print A then print B"],
-          exampleCode: "print('A')\nprint('B')",
-          expected: "A B",
-          explainKeywords: ["print", "line"],
-          explainMe: "Two print calls produce two separate lines."
-        }
-      },
+    q1: {
+      prompt: "Print exactly: HELLO",
+      starter: "# Write code\n",
+      hints: ["Use print('HELLO')", "Quotes matter"],
+      exampleCode: "print('HI')",
+      expected: "HELLO",
+      explainKeywords: ["print", "quotes"],
+      explainMe: "Use print with quotes to display text exactly."
+    },
+    q2: {
+      prompt: "Print on 2 lines:\nA\nB",
+      starter: "# Write code\n",
+      hints: ["Use two print lines", "First print A then print B"],
+      exampleCode: "print('A')\nprint('B')",
+      expected: "A B",
+      explainKeywords: ["print", "line"],
+      explainMe: "Two print calls produce two separate lines."
+    }
+  },
 
-      {
-        name: "Strings & quotes",
-        lesson:
-`📘 Lesson 2: Strings
+  {
+    name: "Strings & quotes",
+    lesson: `📘 Lesson 2: Strings
 Strings are text inside quotes: "hello" or 'hello'
 
 You can print quotes using escape:
 print("He said \\"Hi\\"")`,
-        q1: {
-          prompt: `Print exactly: I love Python`,
-          starter: "# Write code\n",
-          hints: ["Use print('I love Python')"],
-          exampleCode: "print('I love Coding')",
-          expected: "I love Python",
-          explainKeywords: ["string", "quotes", "print"],
-          explainMe: "A string is text inside quotes."
-        },
-        q2: {
-          prompt: `Print exactly: He said "Hi"`,
-          starter: "# Write code\n",
-          hints: ["Use double quotes outside and escape inside", 'Example: print("He said \\"Hi\\"")'],
-          exampleCode: 'print("He said \\"Hello\\"")',
-          expected: 'He said "Hi"',
-          explainKeywords: ["escape", "\\", "quotes"],
-          explainMe: "Use \\\" to print a double quote inside a double-quoted string."
-        }
-      },
+    q1: {
+      prompt: `Print exactly: I love Python`,
+      starter: "# Write code\n",
+      hints: ["Use print('I love Python')"],
+      exampleCode: "print('I love Coding')",
+      expected: "I love Python",
+      explainKeywords: ["string", "quotes", "print"],
+      explainMe: "A string is text inside quotes."
+    },
+    q2: {
+      prompt: `Print exactly: He said "Hi"`,
+      starter: "# Write code\n",
+      hints: ["Use double quotes outside and escape inside", 'Example: print("He said \\"Hi\\"")'],
+      exampleCode: 'print("He said \\"Hello\\"")',
+      expected: 'He said "Hi"',
+      explainKeywords: ["escape", "\\", "quotes"],
+      explainMe: "Use \\\" to print a double quote inside a double-quoted string."
+    }
+  },
 
-      {
-        name: "Numbers & arithmetic",
-        lesson:
-`📘 Lesson 3: Numbers
+  {
+    name: "Numbers & arithmetic",
+    lesson: `📘 Lesson 3: Numbers
 You can do math:
 +  add
 -  subtract
@@ -1505,144 +1502,139 @@ You can do math:
 
 Example:
 print(10 + 5)`,
-        q1: {
-          prompt: "Print the result of 7 + 8",
-          starter: "# Write code\n",
-          hints: ["Use print(7+8)"],
-          exampleCode: "print(3+4)",
-          expected: "15",
-          explainKeywords: ["+", "print", "add"],
-          explainMe: "Use + to add two numbers and print the result."
-        },
-        q2: {
-          prompt: "Print the result of (9 * 3) - 5",
-          starter: "# Write code\n",
-          hints: ["Use parentheses", "9*3 = 27 then -5"],
-          exampleCode: "print((4*2)-1)",
-          expected: "22",
-          explainKeywords: ["*", "-", "parentheses"],
-          explainMe: "Use parentheses to control order, then multiply and subtract."
-        }
-      },
+    q1: {
+      prompt: "Print the result of 7 + 8",
+      starter: "# Write code\n",
+      hints: ["Use print(7+8)"],
+      exampleCode: "print(3+4)",
+      expected: "15",
+      explainKeywords: ["+", "print", "add"],
+      explainMe: "Use + to add two numbers and print the result."
+    },
+    q2: {
+      prompt: "Print the result of (9 * 3) - 5",
+      starter: "# Write code\n",
+      hints: ["Use parentheses", "9*3 = 27 then -5"],
+      exampleCode: "print((4*2)-1)",
+      expected: "22",
+      explainKeywords: ["*", "-", "parentheses"],
+      explainMe: "Use parentheses to control order, then multiply and subtract."
+    }
+  },
 
-      {
-        name: "Variables",
-        lesson:
-`📘 Lesson 4: Variables
+  {
+    name: "Variables",
+    lesson: `📘 Lesson 4: Variables
 A variable stores a value.
 
 Example:
 x = 10
 print(x)`,
-        q1: {
-          prompt: "Create x = 12 and print x",
-          starter: "# Write code\n",
-          hints: ["x = 12", "print(x)"],
-          exampleCode: "x=5\nprint(x)",
-          expected: "12",
-          explainKeywords: ["x", "variable", "="],
-          explainMe: "Use = to assign a value to a variable and then print it."
-        },
-        q2: {
-          prompt: "Create a=5, b=8 and print a+b",
-          starter: "# Write code\n",
-          hints: ["a=5", "b=8", "print(a+b)"],
-          exampleCode: "a=1\nb=2\nprint(a+b)",
-          expected: "13",
-          explainKeywords: ["a", "b", "+", "print"],
-          explainMe: "Store values in variables and add them."
-        }
-      },
+    q1: {
+      prompt: "Create x = 12 and print x",
+      starter: "# Write code\n",
+      hints: ["x = 12", "print(x)"],
+      exampleCode: "x=5\nprint(x)",
+      expected: "12",
+      explainKeywords: ["x", "variable", "="],
+      explainMe: "Use = to assign a value to a variable and then print it."
+    },
+    q2: {
+      prompt: "Create a=5, b=8 and print a+b",
+      starter: "# Write code\n",
+      hints: ["a=5", "b=8", "print(a+b)"],
+      exampleCode: "a=1\nb=2\nprint(a+b)",
+      expected: "13",
+      explainKeywords: ["a", "b", "+", "print"],
+      explainMe: "Store values in variables and add them."
+    }
+  },
 
-      {
-        name: "f-strings",
-        lesson:
-`📘 Lesson 5: f-strings
+  {
+    name: "f-strings",
+    lesson: `📘 Lesson 5: f-strings
 Use f"..." to insert variables into text.
 
 Example:
 name = "PyQuest"
 print(f"Welcome {name}")`,
-        q1: {
-          prompt: 'Set name="Ankush" and print: Welcome Ankush',
-          starter: "# Write code\n",
-          hints: ['name="Ankush"', 'print(f"Welcome {name}")'],
-          exampleCode: 'name="X"\nprint(f"Welcome {name}")',
-          expected: "Welcome Ankush",
-          explainKeywords: ["f\"", "{", "name"],
-          explainMe: "f-strings let you place variables inside { }."
-        },
-        q2: {
-          prompt: "Set x=7 and print: x is 7",
-          starter: "# Write code\n",
-          hints: ["x=7", 'print(f"x is {x}")'],
-          exampleCode: 'x=3\nprint(f"x is {x}")',
-          expected: "x is 7",
-          explainKeywords: ["f-string", "{x}", "print"],
-          explainMe: "Use f-string to include x in the output text."
-        }
-      },
+    q1: {
+      prompt: 'Set name="Ankush" and print: Welcome Ankush',
+      starter: "# Write code\n",
+      hints: ['name="Ankush"', 'print(f"Welcome {name}")'],
+      exampleCode: 'name="X"\nprint(f"Welcome {name}")',
+      expected: "Welcome Ankush",
+      explainKeywords: ['f"', "{", "name"],
+      explainMe: "f-strings let you place variables inside { }."
+    },
+    q2: {
+      prompt: "Set x=7 and print: x is 7",
+      starter: "# Write code\n",
+      hints: ["x=7", 'print(f"x is {x}")'],
+      exampleCode: 'x=3\nprint(f"x is {x}")',
+      expected: "x is 7",
+      explainKeywords: ["f-string", "{x}", "print"],
+      explainMe: "Use f-string to include x in the output text."
+    }
+  },
 
-      {
-        name: "Type conversion",
-        lesson:
-`📘 Lesson 6: Type conversion
+  {
+    name: "Type conversion",
+    lesson: `📘 Lesson 6: Type conversion
 int("5") -> 5
 str(10) -> "10"
 float("2.5") -> 2.5`,
-        q1: {
-          prompt: 'Convert "6" to int and print it + 4',
-          starter: "# Write code\n",
-          hints: ['n=int("6")', "print(n+4)"],
-          exampleCode: 'n=int("3")\nprint(n+1)',
-          expected: "10",
-          explainKeywords: ["int", "string", "convert"],
-          explainMe: "Convert the string to an int, then add 4."
-        },
-        q2: {
-          prompt: "Convert number 21 to string and print: Age: 21",
-          starter: "# Write code\n",
-          hints: ['s=str(21)', 'print("Age: "+s)'],
-          exampleCode: 's=str(5)\nprint("Age: "+s)',
-          expected: "Age: 21",
-          explainKeywords: ["str", "+", "concatenate"],
-          explainMe: "str() converts a number to text so you can join it with other text."
-        }
-      },
+    q1: {
+      prompt: 'Convert "6" to int and print it + 4',
+      starter: "# Write code\n",
+      hints: ['n=int("6")', "print(n+4)"],
+      exampleCode: 'n=int("3")\nprint(n+1)',
+      expected: "10",
+      explainKeywords: ["int", "string", "convert"],
+      explainMe: "Convert the string to an int, then add 4."
+    },
+    q2: {
+      prompt: "Convert number 21 to string and print: Age: 21",
+      starter: "# Write code\n",
+      hints: ['s=str(21)', 'print("Age: "+s)'],
+      exampleCode: 's=str(5)\nprint("Age: "+s)',
+      expected: "Age: 21",
+      explainKeywords: ["str", "+", "concatenate"],
+      explainMe: "str() converts a number to text so you can join it with other text."
+    }
+  },
 
-      {
-        name: "Booleans & comparisons",
-        lesson:
-`📘 Lesson 7: Booleans
+  {
+    name: "Booleans & comparisons",
+    lesson: `📘 Lesson 7: Booleans
 Comparisons return True/False:
 == equal
 != not equal
 >  greater
 <  less`,
-        q1: {
-          prompt: "Print the result of: 10 > 3",
-          starter: "# Write code\n",
-          hints: ["Use print(10 > 3)"],
-          exampleCode: "print(2>5)",
-          expected: "True",
-          explainKeywords: [">", "True", "print"],
-          explainMe: "10 is greater than 3, so the comparison is True."
-        },
-        q2: {
-          prompt: "Print the result of: 5 == 8",
-          starter: "# Write code\n",
-          hints: ["Use == for equal comparison"],
-          exampleCode: "print(4==4)",
-          expected: "False",
-          explainKeywords: ["==", "False"],
-          explainMe: "5 is not equal to 8, so it prints False."
-        }
-      },
+    q1: {
+      prompt: "Print the result of: 10 > 3",
+      starter: "# Write code\n",
+      hints: ["Use print(10 > 3)"],
+      exampleCode: "print(2>5)",
+      expected: "True",
+      explainKeywords: [">", "True", "print"],
+      explainMe: "10 is greater than 3, so the comparison is True."
+    },
+    q2: {
+      prompt: "Print the result of: 5 == 8",
+      starter: "# Write code\n",
+      hints: ["Use == for equal comparison"],
+      exampleCode: "print(4==4)",
+      expected: "False",
+      explainKeywords: ["==", "False"],
+      explainMe: "5 is not equal to 8, so it prints False."
+    }
+  },
 
-      {
-        name: "if / elif / else",
-        lesson:
-`📘 Lesson 8: if / elif / else
+  {
+    name: "if / elif / else",
+    lesson: `📘 Lesson 8: if / elif / else
 Use if to run code when condition is True.
 
 Example:
@@ -1651,59 +1643,58 @@ if x > 5:
   print("big")
 else:
   print("small")`,
-        q1: {
-          prompt: "x=10. If x>7 print BIG else print SMALL",
-          starter: "# Write code\n",
-          hints: ["x=10", "if x>7:", "print('BIG')", "else:"],
-          exampleCode: "x=1\nif x>0:\n print('YES')\nelse:\n print('NO')",
-          expected: "BIG",
-          explainKeywords: ["if", "else", ">"],
-          explainMe: "Since 10>7, the if block runs."
-        },
-        q2: {
-          prompt: "x=3. If x==1 print ONE, elif x==3 print THREE, else print OTHER",
-          starter: "# Write code\n",
-          hints: ["Use if/elif/else", "x==3 should print THREE"],
-          exampleCode: "x=2\nif x==1:\n print('ONE')\nelif x==2:\n print('TWO')\nelse:\n print('OTHER')",
-          expected: "THREE",
-          explainKeywords: ["elif", "==", "else"],
-          explainMe: "elif checks another condition if the first is false."
-        }
-      },
+    q1: {
+      prompt: "x=10. If x>7 print BIG else print SMALL",
+      starter: "# Write code\n",
+      hints: ["x=10", "if x>7:", "print('BIG')", "else:"],
+      exampleCode: "x=1\nif x>0:\n print('YES')\nelse:\n print('NO')",
+      expected: "BIG",
+      explainKeywords: ["if", "else", ">"],
+      explainMe: "Since 10>7, the if block runs."
+    },
+    q2: {
+      prompt: "x=3. If x==1 print ONE, elif x==3 print THREE, else print OTHER",
+      starter: "# Write code\n",
+      hints: ["Use if/elif/else", "x==3 should print THREE"],
+      exampleCode:
+        "x=2\nif x==1:\n print('ONE')\nelif x==2:\n print('TWO')\nelse:\n print('OTHER')",
+      expected: "THREE",
+      explainKeywords: ["elif", "==", "else"],
+      explainMe: "elif checks another condition if the first is false."
+    }
+  },
 
-      {
-        name: "for loop + range",
-        lesson:
-`📘 Lesson 9: for loop
+  {
+    name: "for loop + range",
+    lesson: `📘 Lesson 9: for loop
 range(1, 4) gives 1,2,3
 
 Example:
 for i in range(1,4):
   print(i)`,
-        q1: {
-          prompt: "Print 1 to 3 using a loop",
-          starter: "# Write code\n",
-          hints: ["Use for i in range(1,4)", "print(i)"],
-          exampleCode: "for i in range(1,3):\n print(i)",
-          expected: "1 2 3",
-          explainKeywords: ["for", "range", "print"],
-          explainMe: "range(1,4) produces 1,2,3 and the loop prints them."
-        },
-        q2: {
-          prompt: "Print EVEN for numbers 2,4,6 using a loop",
-          starter: "# Write code\n",
-          hints: ["Use range(2,7,2)", "Print 'EVEN' inside loop"],
-          exampleCode: "for i in range(2,6,2):\n print('EVEN')",
-          expected: "EVEN EVEN EVEN",
-          explainKeywords: ["range", "step", "loop"],
-          explainMe: "range(start, end, step) can jump by 2."
-        }
-      },
+    q1: {
+      prompt: "Print 1 to 3 using a loop",
+      starter: "# Write code\n",
+      hints: ["Use for i in range(1,4)", "print(i)"],
+      exampleCode: "for i in range(1,3):\n print(i)",
+      expected: "1 2 3",
+      explainKeywords: ["for", "range", "print"],
+      explainMe: "range(1,4) produces 1,2,3 and the loop prints them."
+    },
+    q2: {
+      prompt: "Print EVEN for numbers 2,4,6 using a loop",
+      starter: "# Write code\n",
+      hints: ["Use range(2,7,2)", "Print 'EVEN' inside loop"],
+      exampleCode: "for i in range(2,6,2):\n print('EVEN')",
+      expected: "EVEN EVEN EVEN",
+      explainKeywords: ["range", "step", "loop"],
+      explainMe: "range(start, end, step) can jump by 2."
+    }
+  },
 
-      {
-        name: "while loop",
-        lesson:
-`📘 Lesson 10: while loop
+  {
+    name: "while loop",
+    lesson: `📘 Lesson 10: while loop
 Runs while condition is True.
 
 Example:
@@ -1711,29 +1702,25 @@ i=1
 while i<=3:
   print(i)
   i += 1`,
-        q1: {
-          prompt: "Use while loop to print 1 2 3 (each on new line)",
-          starter: "# Write code\n",
-          hints: ["i=1", "while i<=3:", "print(i)", "i+=1"],
-          exampleCode: "i=1\nwhile i<=2:\n print(i)\n i+=1",
-          expected: "1 2 3",
-          explainKeywords: ["while", "<=", "i+=1"],
-          explainMe: "Increase i each loop so it eventually stops."
-        },
-        q2: {
-          prompt: "Use while loop to print: GO x3 times",
-          starter: "# Write code\n",
-          hints: ["Use a counter", "Loop 3 times"],
-          exampleCode: "c=0\nwhile c<2:\n print('GO')\n c+=1",
-          expected: "GO GO GO",
-          explainKeywords: ["counter", "while", "<"],
-          explainMe: "Count how many times you printed GO."
-        }
-      },
-
-      {
-        name: "Lists basics",
-        lesson:
+    q1: {
+      prompt: "Use while loop to print 1 2 3 (each on new line)",
+      starter: "# Write code\n",
+      hints: ["i=1", "while i<=3:", "print(i)", "i+=1"],
+      exampleCode: "i=1\nwhile i<=2:\n print(i)\n i+=1",
+      expected: "1 2 3",
+      explainKeywords: ["while", "<=", "i+=1"],
+      explainMe: "Increase i each loop so it eventually stops."
+    },
+    q2: {
+      prompt: "Use while loop to print: GO x3 times",
+      starter: "# Write code\n",
+      hints: ["Use a counter", "Loop 3 times"],
+      exampleCode: "c=0\nwhile c<2:\n print('GO')\n c+=1",
+      expected: "GO GO GO",
+      explainKeywords: ["counter", "while", "<"],
+      explainMe: "Count how many times you printed GO."
+    }
+  },
 
   {
     name: "Lists",
@@ -1862,8 +1849,8 @@ print(d["a"]) -> 1`,
       explainMe: "Get the value from dict using its key and join it into a string."
     }
   }
-
 ];
+
 
 
     // If your editor truncated the lesson list above, PyQuest will still run, but Learn mode will have fewer lessons.
