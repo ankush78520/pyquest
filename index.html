@@ -1837,19 +1837,23 @@ t = (1,2,3)`,
         }
       },
 
-  const LEARN_CURRICULUM = [
+ const LEARN_CURRICULUM = [
   {
     name: "Dictionaries",
     lesson: {
-      lessonTitle: "📘 Lesson 15: Dictionaries (dict)",
-      lessonText: `A dict stores key:value pairs:
-d = {"a":1, "b":2}
-print(d["a"]) -> 1`,
+      lessonTitle: "📘Lesson 15: Dictionaries (dict)",
+      lessonText:
+        "A dict stores key:value pairs:\n" +
+        "d = {\"a\":1, \"b\":2}\n" +
+        "print(d[\"a\"]) -> 1",
 
       q1: {
         prompt: 'Create d={"a":10,"b":20} and print d["b"]',
         starter: "# Write code\n",
-        hints: ["Create dict with braces {}", 'Use print(d["b"])'],
+        hints: [
+          "Create dict with braces {}",
+          'Use print(d["b"])'
+        ],
         exampleCode: 'd={"x":1,"y":2}\nprint(d["y"])',
         expected: "20",
         explainKeywords: ["dict", "key", "value"],
@@ -1858,6 +1862,7 @@ print(d["a"]) -> 1`,
     }
   }
 ];
+
 
     q2: {
       prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
