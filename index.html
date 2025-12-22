@@ -1869,14 +1869,22 @@ print(d["a"]) -> 1`,
     ];
 
 
-    // If your editor truncated the lesson list above, PyQuest will still run, but Learn mode will have fewer lessons.
-    // (Your original message contained all 25 lessons; paste full list into LEARN_CURRICULUM if needed.)
+   // ---------- Learn curriculum stage builder ----------
+function makeLearnStage(stageNumber) {
+  const topicIndex =
+    Math.floor((stageNumber - 1) / 3) % LEARN_CURRICULUM.length;
 
-    // ---------- Learn curriculum stage builder ----------
-    function makeLearnStage(stageNumber){
-      const topicIndex = Math.floor((stageNumber - 1) / 3) % LEARN_CURRICULUM.length;
-      const stageInTopic = (stageNumber - 1) % 3;
-      const topic = LEARN_CURRICULUM[topicIndex];
+  const stageInTopic = (stageNumber - 1) % 3;
+  const topic = LEARN_CURRICULUM[topicIndex];
+
+  return {
+    stageNumber,
+    topicIndex,
+    stageInTopic,
+    topic
+  };
+}
+
 
       if(stageInTopic === 0){
         return {
