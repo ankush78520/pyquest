@@ -189,6 +189,7 @@
           <button class="btn" id="exBtn">EX Code</button>
           <button class="btn" id="runBtn">Run</button>
           <button class="btn primary" id="submitBtn">Submit</button>
+          <button class="btn ghost" id="shareBtn">Share 🟦</button>
         </div>
       </div>
 
@@ -410,7 +411,6 @@
     </div>
   </div>
 
-  <!-- Login modal -->
   <div class="modalBackdrop" id="loginBackdrop">
     <div class="modal">
       <div style="font-size:18px; font-weight:700;">Login to PyQuest 🔐</div>
@@ -453,7 +453,6 @@
     </div>
   </div>
 
-  <!-- Explain modal -->
   <div class="modalBackdrop" id="explainBackdrop">
     <div class="modal">
       <div style="font-size:18px; font-weight:800;">✅ Stage Solved! Explain your code ✍️</div>
@@ -485,16 +484,13 @@
     </div>
   </div>
 
-  <!-- Toast -->
   <div class="toast" id="toast">
     <div class="tTitle" id="toastTitle">🏆 Achievement Unlocked!</div>
     <div class="tMsg" id="toastMsg"></div>
   </div>
 
-  <!-- Python engine -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 
-  <!-- Firebase + App -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import {
@@ -504,7 +500,6 @@
     import { getAuth, signInAnonymously, signInWithEmailAndPassword }
       from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-    // ✅ Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyADtZ0hjE0VUVVLnEJgqwOBJqokIbb0Lu0",
       authDomain: "pyquest-6e039.firebaseapp.com",
@@ -557,6 +552,7 @@
     const runBtn = document.getElementById("runBtn");
     const submitBtn = document.getElementById("submitBtn");
     const continueLessonBtn = document.getElementById("continueLessonBtn");
+    const shareBtn = document.getElementById("shareBtn");
 
     const useHintPU = document.getElementById("useHintPU");
     const useSkipPU = document.getElementById("useSkipPU");
@@ -626,7 +622,6 @@
     const devSearchBtn = document.getElementById("devSearchBtn");
     const devResult = document.getElementById("devResult");
 
-    // ✅ NEW Dev Ctrl refs
     const devXpUser = document.getElementById("devXpUser");
     const devXpAmount = document.getElementById("devXpAmount");
     const devGiveXpBtn = document.getElementById("devGiveXpBtn");
@@ -671,6 +666,7 @@
       useRevealPU.disabled = isBusy;
       useSkipPU.disabled = isBusy;
       continueLessonBtn.disabled = isBusy;
+      shareBtn.disabled = isBusy;
     }
 
     function normalizeOutput(s){ return String(s).replace(/\s+/g, " ").trim(); }
@@ -700,12 +696,70 @@
     function validPin(pin){ return /^[0-9]{4,6}$/.test(pin || ""); }
     function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 
+    // =========================
+    // SHARE FEATURE (FINAL)
+    // =========================
+    let lastSharePayload = null;
+
+    function buildShareMessage(payload){
+      const site = "https://ankush78520.github.io/pyquest/";
+      const user = state.username || "Student";
+      const xp = state.xp ?? 0;
+      const solved = state.solvedLevels?.length ?? 0;
+      const track = trackLabel(state.track);
+
+      const title = payload?.title || "🐍 I’m learning Python on PyQuest!";
+      const msg = payload?.message || "Play free Python stages and level up your coding skills!";
+
+      return [
+        title,
+        msg,
+        "",
+        `👤 ${user} • ⭐ XP: ${xp} • ✅ Solved: ${solved} • 🎯 ${track}`,
+        `Play here: ${site}`,
+        "",
+        "#PyQuest #LearnPython #Python #Coding #Programming #Developer #CodeNewbie #BuildInPublic"
+      ].join("\n");
+    }
+
+    async function shareNow(payload){
+      lastSharePayload = payload;
+      const text = buildShareMessage(payload);
+      const url = "https://ankush78520.github.io/pyquest/";
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: payload?.title || "PyQuest", text, url });
+          showToast("✅ Shared!", "Thanks for sharing PyQuest!");
+          return;
+        } catch {
+          // user cancelled -> ignore
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("📋 Copied!", "Share text copied. Paste it in Instagram/WhatsApp.");
+      } catch {
+        prompt("Copy this text and share:", text);
+      }
+    }
+
+    shareBtn.onclick = async () => {
+      if(!lastSharePayload){
+        lastSharePayload = {
+          title: "🐍 I’m learning Python on PyQuest!",
+          message: "Play free Python stages and level up your coding skills!"
+        };
+      }
+      await shareNow(lastSharePayload);
+    };
+
     // ---------- Firestore structure ----------
-    const USERS_COL = "users_public";  // user docs by usernameLower (doc id)
-    const STATS_DOC = doc(db, "stats", "global"); // visits counter
+    const USERS_COL = "users_public";
+    const STATS_DOC = doc(db, "stats", "global");
     const SESSION_KEY = "pyquest_session_user";
 
-    // show dev ctrl only if ?dev=1
     const urlParams = new URLSearchParams(location.search);
     if(urlParams.get("dev") === "1") devBtn.style.display = "inline-block";
 
@@ -862,26 +916,33 @@
       await refreshChampionStatus();
     }
 
-    // ✅ FIXED: Dev view (your previous code broke here)
+    // ✅ FIXED (no broken braces / no duplicated handlers inside)
     function showDev(){
       playView.style.display = "none";
       profileView.style.display = "none";
       leaderView.style.display = "none";
       devView.style.display = "block";
 
-      // If admin already logged in, refresh visits display
-      if(isAdminLoggedIn){
-        readGlobalVisits().catch(()=>{});
+      if(!isAdminLoggedIn){
+        adminStatus.textContent = "Please login to use Dev Ctrl.";
+        devResult.textContent = "Login first, then search a username.";
+        devXpStatus.textContent = "";
+        devPwStatus.textContent = "";
+      } else {
+        adminStatus.textContent = "✅ Admin logged in.";
       }
+
+      setWelcome();
+      updateTopStats();
     }
 
-    // ✅ FIXED: hook nav buttons ONCE (not inside showDev)
+    // ✅ handlers (ONLY ONCE)
     navPlay.onclick = showPlay;
     navProfile.onclick = () => showProfile();
     navLeaderboard.onclick = () => showLeaderboard();
-
     devBtn.onclick = showDev;
     devClose.onclick = showPlay;
+    backToPlay.onclick = showPlay;
 
     navLogout.onclick = () => {
       const ok = confirm("Logout? Your progress stays online, you can login again with username+PIN.");
@@ -892,8 +953,6 @@
       setWelcome();
       showLoginModal();
     };
-
-    backToPlay.onclick = showPlay;
 
     // ---------- Login modal ----------
     function showLoginModal(){
@@ -1167,7 +1226,6 @@
       }
     };
 
-    // ✅ Admin Give XP
     devGiveXpBtn.onclick = async () => {
       if(!isAdminLoggedIn){
         devXpStatus.textContent = "❌ Admin login required.";
@@ -1198,7 +1256,6 @@
       }
     };
 
-    // ✅ Admin Give Powerups
     devGivePwBtn.onclick = async () => {
       if(!isAdminLoggedIn){
         devPwStatus.textContent = "❌ Admin login required.";
@@ -1405,12 +1462,18 @@
       { id:"nohint_5",  name:"No-Hint Streak",  desc:"Solve 5 stages with 0 hints used (not tracked per-stage, approx).", rule:(s)=> s.solvedLevels.length >= 5 && s.hintsUsedTotal <= Math.max(0, s.solvedLevels.length - 5) },
     ];
 
+    // ✅ UPDATED to set share payload when badge unlocks
     function checkBadges(){
       for(const b of BADGES){
         if(!state.badges.includes(b.id) && b.rule(state)){
           state.badges.push(b.id);
           showToast("🏆 Achievement Unlocked!", `${b.name}\n${b.desc}`);
           spawnConfetti(70);
+
+          lastSharePayload = {
+            title: "🏆 Achievement Unlocked on PyQuest!",
+            message: `I unlocked: ${b.name} 🎉`
+          };
         }
       }
     }
@@ -1807,7 +1870,6 @@
       return makeBeginnerStage(n);
     }
 
-    // ---------- Hint budgets per stage ----------
     function getHintsLeftForStage(stageNum, budget){
       const prog = getProgress();
       const key = String(stageNum);
@@ -1819,7 +1881,6 @@
       prog.perLevelHintsLeft[String(stageNum)] = value;
     }
 
-    // ---------- Game runtime variables ----------
     let currentStage = null;
     let hintsLeft = 0;
     let shownHints = 0;
@@ -1829,7 +1890,6 @@
     let pendingNextStage = null;
     let pendingSolvedXp = 0;
 
-    // ---------- UI mode for lesson-only stages ----------
     function setLessonModeUI(isLesson){
       continueLessonBtn.style.display = isLesson ? "inline-block" : "none";
       hintBtn.style.display = isLesson ? "none" : "inline-block";
@@ -1839,6 +1899,7 @@
       useHintPU.style.display = isLesson ? "none" : "inline-block";
       useRevealPU.style.display = isLesson ? "none" : "inline-block";
       useSkipPU.style.display = isLesson ? "none" : "inline-block";
+      shareBtn.style.display = isLesson ? "none" : "inline-block";
 
       codeEl.disabled = isLesson;
       if(isLesson) codeEl.value = "# Lesson screen (no code needed)\n";
@@ -1873,7 +1934,6 @@
       setWelcome();
     }
 
-    // ---------- Continue Lesson ----------
     continueLessonBtn.onclick = async () => {
       if(!currentStage?.lessonOnly) return;
       const prog = getProgress();
@@ -1884,7 +1944,6 @@
       updateTopStats();
     };
 
-    // ---------- Powerups ----------
     useHintPU.onclick = async () => {
       if(!(state.powerUps?.hint > 0)) return;
       if(currentStage?.lessonOnly) return;
@@ -1945,7 +2004,6 @@
     buyReveal.onclick = () => buyPowerUp("reveal");
     buySkip.onclick = () => buyPowerUp("skip");
 
-    // ---------- Hints + EX code ----------
     hintBtn.onclick = async () => {
       const L = currentStage;
       if(!L || L.lessonOnly) return;
@@ -1983,7 +2041,6 @@
         "\n\n⚠️ Modify this code to solve the mission.";
     };
 
-    // ---------- Run ----------
     runBtn.onclick = async () => {
       if(currentStage?.lessonOnly) return;
       const py = await ensurePyodide();
@@ -1998,7 +2055,6 @@
       } finally { setBusy(false); }
     };
 
-    // ---------- Explain your code ----------
     function scoreExplanation(text, keywords){
       const t = (text || "").toLowerCase();
       let hits = 0;
@@ -2084,6 +2140,12 @@
 
           const bonusHints = Math.max(0, hintsLeft);
           const baseXp = 10 + bonusHints;
+
+          // ✅ set share payload for stage clear
+          lastSharePayload = {
+            title: "✅ Stage Cleared on PyQuest!",
+            message: `I cleared Stage ${cur} and earned ${baseXp} XP 🔥`
+          };
 
           const solveMs = Date.now() - stageStartTime;
           state.lastSolveMs = solveMs;
@@ -2190,4 +2252,3 @@
   </script>
 </body>
 </html>
-
