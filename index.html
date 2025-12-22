@@ -264,7 +264,7 @@
             <button class="btn ghost" id="resetThisTrack">Reset this mode</button>
           </div>
           <div class="help" id="switchMsg"></div>
-          <div class="help">Difficulty auto-adjusts based on speed + hints used (Beginner/Moderate/Pro).</div>
+          <div class="help">Difficulty auto-adjusts based on speed + hints used (mostly for Beginner/Moderate/Pro).</div>
         </div>
 
         <div class="card" style="margin:0;">
@@ -484,7 +484,7 @@
     </div>
   </div>
 
-  <!-- Track transition modal -->
+  <!-- ✅ NEW: Transition modal (Beginner->Moderate, Moderate->Pro, Pro->Endless) -->
   <div class="modalBackdrop" id="transitionBackdrop">
     <div class="modal">
       <div style="font-size:18px; font-weight:800;" id="transitionTitle">✅ Completed!</div>
@@ -516,23 +516,22 @@
     import { getAuth, signInAnonymously, signInWithEmailAndPassword }
       from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 
-    // ✅ FIXED: your real Firebase config (from your snippet)
+    // ✅ Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyADtZ0hjE0VUVVLnEJgqwOBJqokIbb0Lu0",
       authDomain: "pyquest-6e039.firebaseapp.com",
       projectId: "pyquest-6e039",
-      // ✅ use the standard bucket form:
-      storageBucket: "pyquest-6e039.appspot.com",
+      storageBucket: "pyquest-6e039.firebasestorage.app",
       messagingSenderId: "427416463276",
-      appId: "1:427416463276:web:c56bdad1ef6eaf9a013c09"
-      // measurementId not needed for this app
+      appId: "1:427416463276:web:c56bdad1ef6eaf9a013c09",
+      measurementId: "G-TRRZWV6J0F"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // Track lengths (finite)
+    // ✅ Track lengths (finite)
     const MAX_BEGINNER_STAGES = 35;
     const MAX_MODERATE_STAGES = 35;
     const MAX_PRO_STAGES = 35;
@@ -630,6 +629,7 @@
     const btnSkipExplain = document.getElementById("btnSkipExplain");
     const btnSubmitExplain = document.getElementById("btnSubmitExplain");
 
+    // ✅ transition modal refs
     const transitionBackdrop = document.getElementById("transitionBackdrop");
     const transitionTitle = document.getElementById("transitionTitle");
     const transitionMsg = document.getElementById("transitionMsg");
@@ -753,6 +753,7 @@
         lastSolveMs: null,
         isChampion: false,
 
+        // ✅ separate progress per mode
         progressByTrack: {
           learn: emptyProgress(),
           beginner: emptyProgress(),
@@ -760,7 +761,9 @@
           pro: emptyProgress(),
         },
 
+        // ✅ Endless unlocked after Pro completion
         endlessUnlocked: false,
+
         rewardTiers: { hint: 0, reveal: 0, skip: 0 },
       };
     }
@@ -1062,7 +1065,7 @@
         await refreshChampionStatus();
       } catch (e){
         console.warn(e);
-        loginMsg.textContent = "❌ Login failed (check internet / Firestore rules).";
+        loginMsg.textContent = "❌ Login failed (check internet).";
       }
     };
 
@@ -1144,7 +1147,7 @@
           return;
         }
         console.warn(e);
-        loginMsg.textContent = "❌ Create failed (check internet / Firestore rules).";
+        loginMsg.textContent = "❌ Create failed (check internet).";
       }
     };
 
@@ -1160,6 +1163,97 @@
       }catch(e){
         isAdminLoggedIn = false;
         adminStatus.textContent = "❌ Login failed: " + (e?.message || e);
+      }
+    };
+
+    devSearchBtn.onclick = async () => {
+      if(!isAdminLoggedIn){
+        devResult.textContent = "❌ Please login as admin first.";
+        return;
+      }
+      const qUser = cleanUsername(devSearch.value);
+      if(!qUser){
+        devResult.textContent = "Type a username to search.";
+        return;
+      }
+
+      devResult.textContent = "Searching...";
+      try{
+        const prof = await loadUserProfile(qUser);
+        if(!prof){
+          devResult.textContent = "Not found.";
+          return;
+        }
+        devResult.textContent =
+          `FOUND PROFILE\n\n` +
+          `Username: ${prof.username}\n` +
+          `Track: ${trackLabel(prof.track || "learn")}\n` +
+          `Solved: ${prof.solved ?? (prof.solvedLevels?.length || 0)}\n` +
+          `XP: ${prof.xp ?? 0}\n` +
+          `PowerUps: ${JSON.stringify(prof.powerUps || {hint:0,reveal:0,skip:0}, null, 2)}\n\n` +
+          `Learn Stage: ${prof.progressByTrack?.learn?.currentLevel ?? 1}\n` +
+          `Beginner Stage: ${prof.progressByTrack?.beginner?.currentLevel ?? 1}\n` +
+          `Moderate Stage: ${prof.progressByTrack?.moderate?.currentLevel ?? 1}\n` +
+          `Pro Stage: ${prof.progressByTrack?.pro?.currentLevel ?? 1}\n` +
+          `Endless Unlocked: ${prof.endlessUnlocked ? "YES" : "NO"}\n`;
+      } catch(e){
+        devResult.textContent = "Error: " + (e?.message || e);
+      }
+    };
+
+    devGiveXpBtn.onclick = async () => {
+      if(!isAdminLoggedIn){
+        devXpStatus.textContent = "❌ Admin login required.";
+        return;
+      }
+      const u = cleanUsername(devXpUser.value);
+      const amt = Number(devXpAmount.value);
+      if(!u){ devXpStatus.textContent = "❌ Enter a username."; return; }
+      if(!Number.isFinite(amt) || amt <= 0){ devXpStatus.textContent = "❌ Enter valid XP amount."; return; }
+
+      devXpStatus.textContent = "Sending...";
+      try{
+        const userRef = doc(db, USERS_COL, u);
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(userRef);
+          if(!snap.exists()) throw new Error("NOT_FOUND");
+          const d = snap.data() || {};
+          const newXp = (d.xp || 0) + amt;
+          tx.set(userRef, { xp: newXp, updatedAt: serverTimestamp() }, { merge:true });
+        });
+        devXpStatus.textContent = `✅ Added ${amt} XP to ${u}`;
+      } catch(e){
+        devXpStatus.textContent = String(e?.message || e).includes("NOT_FOUND") ? "❌ User not found." : ("❌ Failed: " + (e?.message || e));
+      }
+    };
+
+    devGivePwBtn.onclick = async () => {
+      if(!isAdminLoggedIn){
+        devPwStatus.textContent = "❌ Admin login required.";
+        return;
+      }
+      const u = cleanUsername(devPwUser.value);
+      const type = (devPwType.value || "").trim();
+      const amt = Number(devPwAmount.value);
+
+      if(!u){ devPwStatus.textContent = "❌ Enter a username."; return; }
+      if(!["hint","reveal","skip"].includes(type)){ devPwStatus.textContent = "❌ Choose powerup type."; return; }
+      if(!Number.isFinite(amt) || amt <= 0){ devPwStatus.textContent = "❌ Enter valid amount."; return; }
+
+      devPwStatus.textContent = "Sending...";
+      try{
+        const userRef = doc(db, USERS_COL, u);
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(userRef);
+          if(!snap.exists()) throw new Error("NOT_FOUND");
+          const d = snap.data() || {};
+          const pu = d.powerUps || { hint:0, reveal:0, skip:0 };
+          pu[type] = (pu[type] || 0) + amt;
+          tx.set(userRef, { powerUps: pu, updatedAt: serverTimestamp() }, { merge:true });
+        });
+        devPwStatus.textContent = `✅ Added ${amt} × ${type.toUpperCase()} to ${u}`;
+      } catch(e){
+        devPwStatus.textContent = String(e?.message || e).includes("NOT_FOUND") ? "❌ User not found." : ("❌ Failed: " + (e?.message || e));
       }
     };
 
@@ -1225,8 +1319,7 @@
         });
 
         lbStatus.textContent = "✅ Updated.";
-      } catch (e) {
-        console.warn(e);
+      } catch {
         lbStatus.textContent = "❌ Failed to load. (Check Firestore rules / internet.)";
       }
     }
@@ -1344,66 +1437,69 @@
       }
     }
 
-    // ============================================================
-    // ✅ LEARN CURRICULUM (your pasted list)
-    // ============================================================
-    const LEARN_CURRICULUM = [
-      {
-        name: "print() basics",
-        lesson: `📘 Lesson 1: print()
+    // ---------- Learn curriculum (unchanged logic; keep your old content minimal here) ----------
+  const LEARN_CURRICULUM = [
+  {
+    name: "print() basics",
+    lesson:
+`📘 Lesson 1: print()
 print(...) shows output on the screen.
 
 Examples:
 print("HELLO")
 print(123)`,
-        q1: {
-          prompt: "Print exactly: HELLO",
-          starter: "# Write code\n",
-          hints: ["Use print('HELLO')", "Quotes matter"],
-          exampleCode: "print('HI')",
-          expected: "HELLO",
-          explainKeywords: ["print", "quotes"],
-          explainMe: "Use print with quotes to display text exactly."
-        },
-        q2: {
-          prompt: "Print on 2 lines:\nA\nB",
-          starter: "# Write code\n",
-          hints: ["Use two print lines", "First print A then print B"],
-          exampleCode: "print('A')\nprint('B')",
-          expected: "A B",
-          explainKeywords: ["print", "line"],
-          explainMe: "Two print calls produce two separate lines."
-        }
-      },
-      {
-        name: "Strings & quotes",
-        lesson: `📘 Lesson 2: Strings
+    q1: {
+      prompt: "Print exactly: HELLO",
+      starter: "# Write code\n",
+      hints: ["Use print('HELLO')", "Quotes matter"],
+      exampleCode: "print('HI')",
+      expected: "HELLO",
+      explainKeywords: ["print", "quotes"],
+      explainMe: "Use print with quotes to display text exactly."
+    },
+    q2: {
+      prompt: "Print on 2 lines:\nA\nB",
+      starter: "# Write code\n",
+      hints: ["Use two print lines", "First print A then print B"],
+      exampleCode: "print('A')\nprint('B')",
+      expected: "A B",
+      explainKeywords: ["print", "line"],
+      explainMe: "Two print calls produce two separate lines."
+    }
+  },
+
+  {
+    name: "Strings & quotes",
+    lesson:
+`📘 Lesson 2: Strings
 Strings are text inside quotes: "hello" or 'hello'
 
 You can print quotes using escape:
 print("He said \\"Hi\\"")`,
-        q1: {
-          prompt: `Print exactly: I love Python`,
-          starter: "# Write code\n",
-          hints: ["Use print('I love Python')"],
-          exampleCode: "print('I love Coding')",
-          expected: "I love Python",
-          explainKeywords: ["string", "quotes", "print"],
-          explainMe: "A string is text inside quotes."
-        },
-        q2: {
-          prompt: `Print exactly: He said "Hi"`,
-          starter: "# Write code\n",
-          hints: ["Use double quotes outside and escape inside", 'Example: print("He said \\"Hi\\"")'],
-          exampleCode: 'print("He said \\"Hello\\"")',
-          expected: 'He said "Hi"',
-          explainKeywords: ["escape", "\\", "quotes"],
-          explainMe: "Use \\\" to print a double quote inside a double-quoted string."
-        }
-      },
-      {
-        name: "Numbers & arithmetic",
-        lesson: `📘 Lesson 3: Numbers
+    q1: {
+      prompt: `Print exactly: I love Python`,
+      starter: "# Write code\n",
+      hints: ["Use print('I love Python')"],
+      exampleCode: "print('I love Coding')",
+      expected: "I love Python",
+      explainKeywords: ["string", "quotes", "print"],
+      explainMe: "A string is text inside quotes."
+    },
+    q2: {
+      prompt: `Print exactly: He said "Hi"`,
+      starter: "# Write code\n",
+      hints: ["Use double quotes outside and escape inside", 'Example: print("He said \\"Hi\\"")'],
+      exampleCode: 'print("He said \\"Hello\\"")',
+      expected: 'He said "Hi"',
+      explainKeywords: ["escape", "\\", "quotes"],
+      explainMe: "Use \\\" to print a double quote inside a double-quoted string."
+    }
+  },
+
+  {
+    name: "Numbers & arithmetic",
+    lesson:
+`📘 Lesson 3: Numbers
 You can do math:
 +  add
 -  subtract
@@ -1412,134 +1508,144 @@ You can do math:
 
 Example:
 print(10 + 5)`,
-        q1: {
-          prompt: "Print the result of 7 + 8",
-          starter: "# Write code\n",
-          hints: ["Use print(7+8)"],
-          exampleCode: "print(3+4)",
-          expected: "15",
-          explainKeywords: ["+", "print", "add"],
-          explainMe: "Use + to add two numbers and print the result."
-        },
-        q2: {
-          prompt: "Print the result of (9 * 3) - 5",
-          starter: "# Write code\n",
-          hints: ["Use parentheses", "9*3 = 27 then -5"],
-          exampleCode: "print((4*2)-1)",
-          expected: "22",
-          explainKeywords: ["*", "-", "parentheses"],
-          explainMe: "Use parentheses to control order, then multiply and subtract."
-        }
-      },
-      {
-        name: "Variables",
-        lesson: `📘 Lesson 4: Variables
+    q1: {
+      prompt: "Print the result of 7 + 8",
+      starter: "# Write code\n",
+      hints: ["Use print(7+8)"],
+      exampleCode: "print(3+4)",
+      expected: "15",
+      explainKeywords: ["+", "print", "add"],
+      explainMe: "Use + to add two numbers and print the result."
+    },
+    q2: {
+      prompt: "Print the result of (9 * 3) - 5",
+      starter: "# Write code\n",
+      hints: ["Use parentheses", "9*3 = 27 then -5"],
+      exampleCode: "print((4*2)-1)",
+      expected: "22",
+      explainKeywords: ["*", "-", "parentheses"],
+      explainMe: "Use parentheses to control order, then multiply and subtract."
+    }
+  },
+
+  {
+    name: "Variables",
+    lesson:
+`📘 Lesson 4: Variables
 A variable stores a value.
 
 Example:
 x = 10
 print(x)`,
-        q1: {
-          prompt: "Create x = 12 and print x",
-          starter: "# Write code\n",
-          hints: ["x = 12", "print(x)"],
-          exampleCode: "x=5\nprint(x)",
-          expected: "12",
-          explainKeywords: ["x", "variable", "="],
-          explainMe: "Use = to assign a value to a variable and then print it."
-        },
-        q2: {
-          prompt: "Create a=5, b=8 and print a+b",
-          starter: "# Write code\n",
-          hints: ["a=5", "b=8", "print(a+b)"],
-          exampleCode: "a=1\nb=2\nprint(a+b)",
-          expected: "13",
-          explainKeywords: ["a", "b", "+", "print"],
-          explainMe: "Store values in variables and add them."
-        }
-      },
-      {
-        name: "f-strings",
-        lesson: `📘 Lesson 5: f-strings
+    q1: {
+      prompt: "Create x = 12 and print x",
+      starter: "# Write code\n",
+      hints: ["x = 12", "print(x)"],
+      exampleCode: "x=5\nprint(x)",
+      expected: "12",
+      explainKeywords: ["x", "variable", "="],
+      explainMe: "Use = to assign a value to a variable and then print it."
+    },
+    q2: {
+      prompt: "Create a=5, b=8 and print a+b",
+      starter: "# Write code\n",
+      hints: ["a=5", "b=8", "print(a+b)"],
+      exampleCode: "a=1\nb=2\nprint(a+b)",
+      expected: "13",
+      explainKeywords: ["a", "b", "+", "print"],
+      explainMe: "Store values in variables and add them."
+    }
+  },
+
+  {
+    name: "f-strings",
+    lesson:
+`📘 Lesson 5: f-strings
 Use f"..." to insert variables into text.
 
 Example:
 name = "PyQuest"
 print(f"Welcome {name}")`,
-        q1: {
-          prompt: 'Set name="Ankush" and print: Welcome Ankush',
-          starter: "# Write code\n",
-          hints: ['name="Ankush"', 'print(f"Welcome {name}")'],
-          exampleCode: 'name="X"\nprint(f"Welcome {name}")',
-          expected: "Welcome Ankush",
-          explainKeywords: ['f"', "{", "name"],
-          explainMe: "f-strings let you place variables inside { }."
-        },
-        q2: {
-          prompt: "Set x=7 and print: x is 7",
-          starter: "# Write code\n",
-          hints: ["x=7", 'print(f"x is {x}")'],
-          exampleCode: 'x=3\nprint(f"x is {x}")',
-          expected: "x is 7",
-          explainKeywords: ["f-string", "{x}", "print"],
-          explainMe: "Use f-string to include x in the output text."
-        }
-      },
-      {
-        name: "Type conversion",
-        lesson: `📘 Lesson 6: Type conversion
+    q1: {
+      prompt: 'Set name="Ankush" and print: Welcome Ankush',
+      starter: "# Write code\n",
+      hints: ['name="Ankush"', 'print(f"Welcome {name}")'],
+      exampleCode: 'name="X"\nprint(f"Welcome {name}")',
+      expected: "Welcome Ankush",
+      explainKeywords: ["f\"", "{", "name"],
+      explainMe: "f-strings let you place variables inside { }."
+    },
+    q2: {
+      prompt: "Set x=7 and print: x is 7",
+      starter: "# Write code\n",
+      hints: ["x=7", 'print(f"x is {x}")'],
+      exampleCode: 'x=3\nprint(f"x is {x}")',
+      expected: "x is 7",
+      explainKeywords: ["f-string", "{x}", "print"],
+      explainMe: "Use f-string to include x in the output text."
+    }
+  },
+
+  {
+    name: "Type conversion",
+    lesson:
+`📘 Lesson 6: Type conversion
 int("5") -> 5
 str(10) -> "10"
 float("2.5") -> 2.5`,
-        q1: {
-          prompt: 'Convert "6" to int and print it + 4',
-          starter: "# Write code\n",
-          hints: ['n=int("6")', "print(n+4)"],
-          exampleCode: 'n=int("3")\nprint(n+1)',
-          expected: "10",
-          explainKeywords: ["int", "string", "convert"],
-          explainMe: "Convert the string to an int, then add 4."
-        },
-        q2: {
-          prompt: "Convert number 21 to string and print: Age: 21",
-          starter: "# Write code\n",
-          hints: ['s=str(21)', 'print("Age: "+s)'],
-          exampleCode: 's=str(5)\nprint("Age: "+s)',
-          expected: "Age: 21",
-          explainKeywords: ["str", "+", "concatenate"],
-          explainMe: "str() converts a number to text so you can join it with other text."
-        }
-      },
-      {
-        name: "Booleans & comparisons",
-        lesson: `📘 Lesson 7: Booleans
+    q1: {
+      prompt: 'Convert "6" to int and print it + 4',
+      starter: "# Write code\n",
+      hints: ['n=int("6")', "print(n+4)"],
+      exampleCode: 'n=int("3")\nprint(n+1)',
+      expected: "10",
+      explainKeywords: ["int", "string", "convert"],
+      explainMe: "Convert the string to an int, then add 4."
+    },
+    q2: {
+      prompt: "Convert number 21 to string and print: Age: 21",
+      starter: "# Write code\n",
+      hints: ['s=str(21)', 'print("Age: "+s)'],
+      exampleCode: 's=str(5)\nprint("Age: "+s)',
+      expected: "Age: 21",
+      explainKeywords: ["str", "+", "concatenate"],
+      explainMe: "str() converts a number to text so you can join it with other text."
+    }
+  },
+
+  {
+    name: "Booleans & comparisons",
+    lesson:
+`📘 Lesson 7: Booleans
 Comparisons return True/False:
 == equal
 != not equal
 >  greater
 <  less`,
-        q1: {
-          prompt: "Print the result of: 10 > 3",
-          starter: "# Write code\n",
-          hints: ["Use print(10 > 3)"],
-          exampleCode: "print(2>5)",
-          expected: "True",
-          explainKeywords: [">", "True", "print"],
-          explainMe: "10 is greater than 3, so the comparison is True."
-        },
-        q2: {
-          prompt: "Print the result of: 5 == 8",
-          starter: "# Write code\n",
-          hints: ["Use == for equal comparison"],
-          exampleCode: "print(4==4)",
-          expected: "False",
-          explainKeywords: ["==", "False"],
-          explainMe: "5 is not equal to 8, so it prints False."
-        }
-      },
-      {
-        name: "if / elif / else",
-        lesson: `📘 Lesson 8: if / elif / else
+    q1: {
+      prompt: "Print the result of: 10 > 3",
+      starter: "# Write code\n",
+      hints: ["Use print(10 > 3)"],
+      exampleCode: "print(2>5)",
+      expected: "True",
+      explainKeywords: [">", "True", "print"],
+      explainMe: "10 is greater than 3, so the comparison is True."
+    },
+    q2: {
+      prompt: "Print the result of: 5 == 8",
+      starter: "# Write code\n",
+      hints: ["Use == for equal comparison"],
+      exampleCode: "print(4==4)",
+      expected: "False",
+      explainKeywords: ["==", "False"],
+      explainMe: "5 is not equal to 8, so it prints False."
+    }
+  },
+
+  {
+    name: "if / elif / else",
+    lesson:
+`📘 Lesson 8: if / elif / else
 Use if to run code when condition is True.
 
 Example:
@@ -1548,55 +1654,59 @@ if x > 5:
   print("big")
 else:
   print("small")`,
-        q1: {
-          prompt: "x=10. If x>7 print BIG else print SMALL",
-          starter: "# Write code\n",
-          hints: ["x=10", "if x>7:", "print('BIG')", "else:"],
-          exampleCode: "x=1\nif x>0:\n print('YES')\nelse:\n print('NO')",
-          expected: "BIG",
-          explainKeywords: ["if", "else", ">"],
-          explainMe: "Since 10>7, the if block runs."
-        },
-        q2: {
-          prompt: "x=3. If x==1 print ONE, elif x==3 print THREE, else print OTHER",
-          starter: "# Write code\n",
-          hints: ["Use if/elif/else", "x==3 should print THREE"],
-          exampleCode: "x=2\nif x==1:\n print('ONE')\nelif x==2:\n print('TWO')\nelse:\n print('OTHER')",
-          expected: "THREE",
-          explainKeywords: ["elif", "==", "else"],
-          explainMe: "elif checks another condition if the first is false."
-        }
-      },
-      {
-        name: "for loop + range",
-        lesson: `📘 Lesson 9: for loop
+    q1: {
+      prompt: "x=10. If x>7 print BIG else print SMALL",
+      starter: "# Write code\n",
+      hints: ["x=10", "if x>7:", "print('BIG')", "else:"],
+      exampleCode: "x=1\nif x>0:\n print('YES')\nelse:\n print('NO')",
+      expected: "BIG",
+      explainKeywords: ["if", "else", ">"],
+      explainMe: "Since 10>7, the if block runs."
+    },
+    q2: {
+      prompt: "x=3. If x==1 print ONE, elif x==3 print THREE, else print OTHER",
+      starter: "# Write code\n",
+      hints: ["Use if/elif/else", "x==3 should print THREE"],
+      exampleCode: "x=2\nif x==1:\n print('ONE')\nelif x==2:\n print('TWO')\nelse:\n print('OTHER')",
+      expected: "THREE",
+      explainKeywords: ["elif", "==", "else"],
+      explainMe: "elif checks another condition if the first is false."
+    }
+  },
+
+  {
+    name: "for loop + range",
+    lesson:
+`📘 Lesson 9: for loop
 range(1, 4) gives 1,2,3
 
 Example:
 for i in range(1,4):
   print(i)`,
-        q1: {
-          prompt: "Print 1 to 3 using a loop",
-          starter: "# Write code\n",
-          hints: ["Use for i in range(1,4)", "print(i)"],
-          exampleCode: "for i in range(1,3):\n print(i)",
-          expected: "1 2 3",
-          explainKeywords: ["for", "range", "print"],
-          explainMe: "range(1,4) produces 1,2,3 and the loop prints them."
-        },
-        q2: {
-          prompt: "Print EVEN for numbers 2,4,6 using a loop",
-          starter: "# Write code\n",
-          hints: ["Use range(2,7,2)", "Print 'EVEN' inside loop"],
-          exampleCode: "for i in range(2,6,2):\n print('EVEN')",
-          expected: "EVEN EVEN EVEN",
-          explainKeywords: ["range", "step", "loop"],
-          explainMe: "range(start, end, step) can jump by 2."
-        }
-      },
-      {
-        name: "while loop",
-        lesson: `📘 Lesson 10: while loop
+    q1: {
+      prompt: "Print 1 to 3 using a loop",
+      starter: "# Write code\n",
+      hints: ["Use for i in range(1,4)", "print(i)"],
+      exampleCode: "for i in range(1,3):\n print(i)",
+      expected: "1 2 3",
+      explainKeywords: ["for", "range", "print"],
+      explainMe: "range(1,4) produces 1,2,3 and the loop prints them."
+    },
+    q2: {
+      prompt: "Print EVEN for numbers 2,4,6 using a loop",
+      starter: "# Write code\n",
+      hints: ["Use range(2,7,2)", "Print 'EVEN' inside loop"],
+      exampleCode: "for i in range(2,6,2):\n print('EVEN')",
+      expected: "EVEN EVEN EVEN",
+      explainKeywords: ["range", "step", "loop"],
+      explainMe: "range(start, end, step) can jump by 2."
+    }
+  },
+
+  {
+    name: "while loop",
+    lesson:
+`📘 Lesson 10: while loop
 Runs while condition is True.
 
 Example:
@@ -1604,151 +1714,455 @@ i=1
 while i<=3:
   print(i)
   i += 1`,
-        q1: {
-          prompt: "Use while loop to print 1 2 3 (each on new line)",
-          starter: "# Write code\n",
-          hints: ["i=1", "while i<=3:", "print(i)", "i+=1"],
-          exampleCode: "i=1\nwhile i<=2:\n print(i)\n i+=1",
-          expected: "1 2 3",
-          explainKeywords: ["while", "<=", "i+=1"],
-          explainMe: "Increase i each loop so it eventually stops."
-        },
-        q2: {
-          prompt: "Use while loop to print: GO x3 times",
-          starter: "# Write code\n",
-          hints: ["Use a counter", "Loop 3 times"],
-          exampleCode: "c=0\nwhile c<2:\n print('GO')\n c+=1",
-          expected: "GO GO GO",
-          explainKeywords: ["counter", "while", "<"],
-          explainMe: "Count how many times you printed GO."
-        }
-      },
-      {
-        name: "Lists",
-        lesson: `📘 Lesson 11: Lists
+    q1: {
+      prompt: "Use while loop to print 1 2 3 (each on new line)",
+      starter: "# Write code\n",
+      hints: ["i=1", "while i<=3:", "print(i)", "i+=1"],
+      exampleCode: "i=1\nwhile i<=2:\n print(i)\n i+=1",
+      expected: "1 2 3",
+      explainKeywords: ["while", "<=", "i+=1"],
+      explainMe: "Increase i each loop so it eventually stops."
+    },
+    q2: {
+      prompt: "Use while loop to print: GO x3 times",
+      starter: "# Write code\n",
+      hints: ["Use a counter", "Loop 3 times"],
+      exampleCode: "c=0\nwhile c<2:\n print('GO')\n c+=1",
+      expected: "GO GO GO",
+      explainKeywords: ["counter", "while", "<"],
+      explainMe: "Count how many times you printed GO."
+    }
+  },
+
+  {
+    name: "Lists basics",
+    lesson:
+`📘 Lesson 11: Lists
 A list stores multiple values:
 nums = [1,2,3]
 print(nums[0]) -> 1`,
-        q1: {
-          prompt: "Create nums=[10,20,30] and print the list",
-          starter: "# Write code\n",
-          hints: ["nums=[10,20,30]", "print(nums)"],
-          exampleCode: "nums=[1,2]\nprint(nums)",
-          expected: "[10, 20, 30]",
-          explainKeywords: ["list", "[", "]", "print"],
-          explainMe: "A list is written with square brackets."
-        },
-        q2: {
-          prompt: "Create nums=[5,6,7] and print the first element",
-          starter: "# Write code\n",
-          hints: ["nums[0] is first element", "print(nums[0])"],
-          exampleCode: "nums=[9,8]\nprint(nums[0])",
-          expected: "5",
-          explainKeywords: ["index", "0", "nums[0]"],
-          explainMe: "Index 0 means the first element."
-        }
-      },
-      {
-        name: "List methods + len()",
-        lesson: `📘 Lesson 12: append + len
+    q1: {
+      prompt: "Create nums=[10,20,30] and print the list",
+      starter: "# Write code\n",
+      hints: ["nums=[10,20,30]", "print(nums)"],
+      exampleCode: "nums=[1,2]\nprint(nums)",
+      expected: "[10, 20, 30]",
+      explainKeywords: ["list", "[", "]", "print"],
+      explainMe: "A list is written with square brackets."
+    },
+    q2: {
+      prompt: "Create nums=[5,6,7] and print the first element",
+      starter: "# Write code\n",
+      hints: ["nums[0] is first element", "print(nums[0])"],
+      exampleCode: "nums=[9,8]\nprint(nums[0])",
+      expected: "5",
+      explainKeywords: ["index", "0", "nums[0]"],
+      explainMe: "Index 0 means the first element."
+    }
+  },
+
+  {
+    name: "List methods + len()",
+    lesson:
+`📘 Lesson 12: append + len
 nums.append(x) adds to list end
 len(nums) gives number of items`,
-        q1: {
-          prompt: "Create nums=[1,2]. Append 3. Print nums",
-          starter: "# Write code\n",
-          hints: ["nums=[1,2]", "nums.append(3)", "print(nums)"],
-          exampleCode: "nums=[1]\nnums.append(2)\nprint(nums)",
-          expected: "[1, 2, 3]",
-          explainKeywords: ["append", "list"],
-          explainMe: "append adds an item to the end."
-        },
-        q2: {
-          prompt: "Create nums=[9,8,7,6]. Print len(nums)",
-          starter: "# Write code\n",
-          hints: ["Use len(nums)"],
-          exampleCode: "nums=[1,2,3]\nprint(len(nums))",
-          expected: "4",
-          explainKeywords: ["len", "list"],
-          explainMe: "len returns how many items are in the list."
-        }
-      },
-      {
-        name: "Indexing & slicing",
-        lesson: `📘 Lesson 13: Indexing & slicing
+    q1: {
+      prompt: "Create nums=[1,2]. Append 3. Print nums",
+      starter: "# Write code\n",
+      hints: ["nums=[1,2]", "nums.append(3)", "print(nums)"],
+      exampleCode: "nums=[1]\nnums.append(2)\nprint(nums)",
+      expected: "[1, 2, 3]",
+      explainKeywords: ["append", "list"],
+      explainMe: "append adds an item to the end."
+    },
+    q2: {
+      prompt: "Create nums=[9,8,7,6]. Print len(nums)",
+      starter: "# Write code\n",
+      hints: ["Use len(nums)"],
+      exampleCode: "nums=[1,2,3]\nprint(len(nums))",
+      expected: "4",
+      explainKeywords: ["len", "list"],
+      explainMe: "len returns how many items are in the list."
+    }
+  },
+
+  {
+    name: "Indexing & slicing",
+    lesson:
+`📘 Lesson 13: Indexing & slicing
 s = "python"
 s[0] -> 'p'
 s[1:4] -> 'yth'`,
-        q1: {
-          prompt: 's="python". Print s[0]',
-          starter: "# Write code\n",
-          hints: ["Index 0 is first char", "print(s[0])"],
-          exampleCode: 's="abc"\nprint(s[0])',
-          expected: "p",
-          explainKeywords: ["index", "[0]", "string"],
-          explainMe: "Indexing gets one character from a string."
-        },
-        q2: {
-          prompt: 's="python". Print s[1:4]',
-          starter: "# Write code\n",
-          hints: ["Slice from 1 to 4 (4 not included)"],
-          exampleCode: 's="abcdef"\nprint(s[1:4])',
-          expected: "yth",
-          explainKeywords: ["slice", "1:4"],
-          explainMe: "Slicing takes a part of a string using start:end."
-        }
-      },
-      {
-        name: "Tuples",
-        lesson: `📘 Lesson 14: Tuples
+    q1: {
+      prompt: 's="python". Print s[0]',
+      starter: "# Write code\n",
+      hints: ["Index 0 is first char", "print(s[0])"],
+      exampleCode: 's="abc"\nprint(s[0])',
+      expected: "p",
+      explainKeywords: ["index", "[0]", "string"],
+      explainMe: "Indexing gets one character from a string."
+    },
+    q2: {
+      prompt: 's="python". Print s[1:4]',
+      starter: "# Write code\n",
+      hints: ["Slice from 1 to 4 (4 not included)"],
+      exampleCode: 's="abcdef"\nprint(s[1:4])',
+      expected: "yth",
+      explainKeywords: ["slice", "1:4"],
+      explainMe: "Slicing takes a part of a string using start:end."
+    }
+  },
+
+  {
+    name: "Tuples",
+    lesson:
+`📘 Lesson 14: Tuples
 A tuple is like a list but cannot be changed:
 t = (1,2,3)`,
-        q1: {
-          prompt: "Create t=(4,5,6) and print t",
-          starter: "# Write code\n",
-          hints: ["Use parentheses", "print(t)"],
-          exampleCode: "t=(1,2)\nprint(t)",
-          expected: "(4, 5, 6)",
-          explainKeywords: ["tuple", "(", ")"],
-          explainMe: "A tuple uses parentheses and can store multiple values."
-        },
-        q2: {
-          prompt: "Create t=(9,8,7) and print t[1]",
-          starter: "# Write code\n",
-          hints: ["Index 1 is second element"],
-          exampleCode: "t=(3,4,5)\nprint(t[1])",
-          expected: "8",
-          explainKeywords: ["index", "tuple"],
-          explainMe: "Tuple indexing works like list indexing."
-        }
-      },
-      {
-        name: "Dictionaries",
-        lesson: `📘 Lesson 15: Dictionaries (dict)
+    q1: {
+      prompt: "Create t=(4,5,6) and print t",
+      starter: "# Write code\n",
+      hints: ["Use parentheses", "print(t)"],
+      exampleCode: "t=(1,2)\nprint(t)",
+      expected: "(4, 5, 6)",
+      explainKeywords: ["tuple", "(", ")"],
+      explainMe: "A tuple uses parentheses and can store multiple values."
+    },
+    q2: {
+      prompt: "Create t=(9,8,7) and print t[1]",
+      starter: "# Write code\n",
+      hints: ["Index 1 is second element"],
+      exampleCode: "t=(3,4,5)\nprint(t[1])",
+      expected: "8",
+      explainKeywords: ["index", "tuple"],
+      explainMe: "Tuple indexing works like list indexing."
+    }
+  },
+
+  {
+    name: "Dictionaries",
+    lesson:
+`📘 Lesson 15: Dictionaries (dict)
 A dict stores key:value pairs:
 d = {"a":1, "b":2}
 print(d["a"]) -> 1`,
-        q1: {
-          prompt: 'Create d={"a":10,"b":20} and print d["b"]',
-          starter: "# Write code\n",
-          hints: ["Create dict with braces {}", 'Use print(d["b"])'],
-          exampleCode: 'd={"x":1,"y":2}\nprint(d["y"])',
-          expected: "20",
-          explainKeywords: ["dict", "key", "value"],
-          explainMe: "Use keys to access values in a dictionary."
-        },
-        q2: {
-          prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
-          starter: "# Write code\n",
-          hints: ['print("name="+d["name"])'],
-          exampleCode: 'd={"name":"X"}\nprint("name="+d["name"])',
-          expected: "name=PyQuest",
-          explainKeywords: ["dict", 'd["name"]', "concatenate"],
-          explainMe: "Get the value from dict using its key and join it into a string."
-        }
-      }
-    ];
+    q1: {
+      prompt: 'Create d={"a":10,"b":20} and print d["b"]',
+      starter: "# Write code\n",
+      hints: ["Create dict with braces {}", 'Use print(d["b"])'],
+      exampleCode: 'd={"x":1,"y":2}\nprint(d["y"])',
+      expected: "20",
+      explainKeywords: ["dict", "key", "value"],
+      explainMe: "Use keys to access values in a dictionary."
+    },
+    q2: {
+      prompt: 'Create d={"name":"PyQuest"} and print: name=PyQuest',
+      starter: "# Write code\n",
+      hints: ['print("name="+d["name"])'],
+      exampleCode: 'd={"name":"X"}\nprint("name="+d["name"])',
+      expected: "name=PyQuest",
+      explainKeywords: ["dict", 'd["name"]', "concatenate"],
+      explainMe: "Get the value from dict using its key and join it into a string."
+    }
+  },
 
-    // ---------- Learn curriculum stage builder ----------
+  {
+    name: "Sets",
+    lesson:
+`📘 Lesson 16: Sets
+A set stores unique values:
+s = {1,2,2,3} -> {1,2,3}
+Use len(s) to count unique items.`,
+    q1: {
+      prompt: "Create s={1,2,2,3} and print len(s)",
+      starter: "# Write code\n",
+      hints: ["Duplicates removed in sets", "len(s) gives unique count"],
+      exampleCode: "s={1,1,2}\nprint(len(s))",
+      expected: "3",
+      explainKeywords: ["set", "unique", "len"],
+      explainMe: "Sets keep only unique values, so duplicates are removed."
+    },
+    q2: {
+      prompt: "Create s=set([5,5,5,6]) and print sorted(list(s))",
+      starter: "# Write code\n",
+      hints: ["Use set([...])", "Convert to list then sorted"],
+      exampleCode: "s=set([1,1,2])\nprint(sorted(list(s)))",
+      expected: "[5, 6]",
+      explainKeywords: ["set", "sorted", "list"],
+      explainMe: "Convert set to list to view items, then sort for a stable order."
+    }
+  },
+
+  {
+    name: "Functions (def)",
+    lesson:
+`📘 Lesson 17: Functions
+A function is reusable code:
+def add(a,b):
+  return a+b`,
+    q1: {
+      prompt: "Write a function add(a,b) that returns a+b. Print add(2,3)",
+      starter: "# Write code\n",
+      hints: ["def add(a,b):", "return a+b", "print(add(2,3))"],
+      exampleCode: "def add(a,b):\n return a+b\nprint(add(1,2))",
+      expected: "5",
+      explainKeywords: ["def", "return", "add("],
+      explainMe: "Define the function with def and return the sum."
+    },
+    q2: {
+      prompt: "Write function square(x) returns x*x. Print square(6)",
+      starter: "# Write code\n",
+      hints: ["return x*x", "print(square(6))"],
+      exampleCode: "def square(x):\n return x*x\nprint(square(3))",
+      expected: "36",
+      explainKeywords: ["square", "return", "*"],
+      explainMe: "Multiply x by itself and return it."
+    }
+  },
+
+  {
+    name: "Parameters & defaults",
+    lesson:
+`📘 Lesson 18: Default parameters
+def greet(name="User"):
+  print("Hi", name)`,
+    q1: {
+      prompt: 'Write greet(name="User") that prints: Hi <name>. Call greet()',
+      starter: "# Write code\n",
+      hints: ['def greet(name="User"):', 'print(f"Hi {name}")', "Call greet()"],
+      exampleCode: 'def greet(name="User"):\n print(f"Hi {name}")\ngreet()',
+      expected: "Hi User",
+      explainKeywords: ["default", "parameter", "greet"],
+      explainMe: "If no argument is passed, the default value is used."
+    },
+    q2: {
+      prompt: 'Call greet("Ankush") and it should print: Hi Ankush',
+      starter: "# Write code\n",
+      hints: ["Pass a name to greet"],
+      exampleCode: 'def greet(name="User"):\n print(f"Hi {name}")\ngreet("X")',
+      expected: "Hi Ankush",
+      explainKeywords: ["argument", "parameter"],
+      explainMe: "When you pass an argument, it replaces the default."
+    }
+  },
+
+  {
+    name: "Return values",
+    lesson:
+`📘 Lesson 19: return
+return sends a value back to caller.
+
+Example:
+def f():
+  return 10
+x = f()`,
+    q1: {
+      prompt: "Make function ten() that returns 10. Print ten()",
+      starter: "# Write code\n",
+      hints: ["def ten():", "return 10", "print(ten())"],
+      exampleCode: "def ten():\n return 5\nprint(ten())",
+      expected: "10",
+      explainKeywords: ["return", "function"],
+      explainMe: "Return gives a value back; print shows it."
+    },
+    q2: {
+      prompt: "Make function add1(x) that returns x+1. Print add1(99)",
+      starter: "# Write code\n",
+      hints: ["return x+1"],
+      exampleCode: "def add1(x):\n return x+1\nprint(add1(1))",
+      expected: "100",
+      explainKeywords: ["return", "x+1"],
+      explainMe: "Return x+1 for the result."
+    }
+  },
+
+  {
+    name: "Scope (local/global idea)",
+    lesson:
+`📘 Lesson 20: Scope
+Variables inside a function are local.
+
+Example:
+x=5
+def f():
+  y=10
+  return x+y`,
+    q1: {
+      prompt: "x=7. Define f() that returns x+3. Print f()",
+      starter: "# Write code\n",
+      hints: ["x=7", "def f(): return x+3"],
+      exampleCode: "x=2\ndef f():\n return x+1\nprint(f())",
+      expected: "10",
+      explainKeywords: ["x", "function", "return"],
+      explainMe: "Function can read x defined outside, then add 3."
+    },
+    q2: {
+      prompt: "Define function g() where y=5 inside it, then print y inside g(). Output should be: 5",
+      starter: "# Write code\n",
+      hints: ["Define y inside function", "print(y)"],
+      exampleCode: "def g():\n y=2\n print(y)\ng()",
+      expected: "5",
+      explainKeywords: ["local", "inside", "function"],
+      explainMe: "y is created inside g() and exists there."
+    }
+  },
+
+  {
+    name: "Importing math",
+    lesson:
+`📘 Lesson 21: import math
+Use built-in library math:
+import math
+math.sqrt(16) -> 4.0`,
+    q1: {
+      prompt: "Import math and print math.sqrt(81)",
+      starter: "# Write code\n",
+      hints: ["import math", "print(math.sqrt(81))"],
+      exampleCode: "import math\nprint(math.sqrt(4))",
+      expected: "9.0",
+      explainKeywords: ["import", "math", "sqrt"],
+      explainMe: "Import the math module, then call math.sqrt."
+    },
+    q2: {
+      prompt: "Import math and print math.floor(3.9)",
+      starter: "# Write code\n",
+      hints: ["math.floor returns integer down"],
+      exampleCode: "import math\nprint(math.floor(2.9))",
+      expected: "3",
+      explainKeywords: ["floor", "import", "math"],
+      explainMe: "floor removes decimal and rounds down."
+    }
+  },
+
+  {
+    name: "try/except",
+    lesson:
+`📘 Lesson 22: try/except
+Prevents program crash.
+
+Example:
+try:
+  x = int("a")
+except:
+  print("error")`,
+    q1: {
+      prompt: 'Use try/except so it prints: SAFE',
+      starter: "# Write code\n",
+      hints: ["Put failing code in try", "Print SAFE in except"],
+      exampleCode: 'try:\n int("x")\nexcept:\n print("SAFE")',
+      expected: "SAFE",
+      explainKeywords: ["try", "except"],
+      explainMe: "If an error happens, except runs and prints SAFE."
+    },
+    q2: {
+      prompt: 'Try to do 10/0 and catch it. Print: DIV0',
+      starter: "# Write code\n",
+      hints: ["10/0 causes error", "Use except"],
+      exampleCode: 'try:\n 1/0\nexcept:\n print("DIV0")',
+      expected: "DIV0",
+      explainKeywords: ["ZeroDivisionError", "except"],
+      explainMe: "Division by zero errors can be caught with try/except."
+    }
+  },
+
+  {
+    name: "String methods: lower/upper",
+    lesson:
+`📘 Lesson 23: String methods
+s.lower() -> lowercase
+s.upper() -> uppercase`,
+    q1: {
+      prompt: 's="PyQuest". Print s.lower()',
+      starter: "# Write code\n",
+      hints: ["Use s.lower()"],
+      exampleCode: 's="ABC"\nprint(s.lower())',
+      expected: "pyquest",
+      explainKeywords: ["lower", "string"],
+      explainMe: "lower() converts all letters to lowercase."
+    },
+    q2: {
+      prompt: 's="developer". Print s.upper()',
+      starter: "# Write code\n",
+      hints: ["Use s.upper()"],
+      exampleCode: 's="abc"\nprint(s.upper())',
+      expected: "DEVELOPER",
+      explainKeywords: ["upper", "string"],
+      explainMe: "upper() converts all letters to uppercase."
+    }
+  },
+
+  {
+    name: "split() and join()",
+    lesson:
+`📘 Lesson 24: split & join
+split breaks a string into a list.
+join combines list back into a string.
+
+Example:
+"1,2,3".split(",") -> ["1","2","3"]
+"-".join(["a","b"]) -> "a-b"`,
+    q1: {
+      prompt: 'Split "a,b,c" by comma and print the list',
+      starter: "# Write code\n",
+      hints: ['s="a,b,c"', 'print(s.split(","))'],
+      exampleCode: 's="1,2"\nprint(s.split(","))',
+      expected: "['a', 'b', 'c']",
+      explainKeywords: ["split", "comma", "list"],
+      explainMe: "split(',') separates the text wherever a comma appears."
+    },
+    q2: {
+      prompt: 'Join ["x","y","z"] using "-" and print the result',
+      starter: "# Write code\n",
+      hints: ['arr=["x","y","z"]', 'print("-".join(arr))'],
+      exampleCode: 'arr=["a","b"]\nprint("-".join(arr))',
+      expected: "x-y-z",
+      explainKeywords: ["join", "\"-\"", "list"],
+      explainMe: "join combines list items with the chosen separator."
+    }
+  },
+
+  {
+    name: "Mini Project: Report output",
+    lesson:
+`📘 Lesson 25: Mini Project (Output formatting)
+You will print a small report using variables.
+
+Goal:
+Make clean output that matches exactly.`,
+    q1: {
+      prompt:
+`Create:
+name="PyQuest"
+xp=120
+Print exactly:
+User: PyQuest
+XP: 120`,
+      starter: "# Write code\n",
+      hints: ["Use two print lines", "Or one print with \\n"],
+      exampleCode: 'name="X"\nxp=10\nprint("User:", name)\nprint("XP:", xp)',
+      expected: "User: PyQuest XP: 120",
+      explainKeywords: ["variables", "print", "format"],
+      explainMe: "Print a small report using variables and exact labels."
+    },
+    q2: {
+      prompt:
+`Create:
+wins=7
+loss=2
+Print exactly:
+Total games: 9`,
+      starter: "# Write code\n",
+      hints: ["Total games = wins + loss", "print the line with 9"],
+      exampleCode: "wins=1\nloss=2\nprint('Total games:', wins+loss)",
+      expected: "Total games: 9",
+      explainKeywords: ["wins", "loss", "+", "print"],
+      explainMe: "Add wins and loss to get total games, then print it."
+    }
+  }
+];
+
+
     function makeLearnStage(stageNumber){
       const topicIndex = Math.floor((stageNumber - 1) / 3) % LEARN_CURRICULUM.length;
       const stageInTopic = (stageNumber - 1) % 3;
@@ -1790,30 +2204,787 @@ print(d["a"]) -> 1`,
       };
     }
 
-    // ============================================================
-    // ✅ (rest of your code continues exactly as you pasted)
-    // ============================================================
+    // ---------- Unique token ----------
+    function uniqueToken(n){
+      return ((n * 2654435761) >>> 0).toString(16).toUpperCase().slice(0, 6);
+    }
 
-    // NOTE: I kept the rest of your code unchanged to avoid breaking logic.
-    // Your original file continues from here (Beginner/Moderate/Pro, stages, submit etc.)
-    // ------------------------------------------------------------
-    // Paste the remaining part of your original script below this line unchanged
-    // (Everything after makeLearnStage in your original stays the same.)
-    // ------------------------------------------------------------
+    // ---------- Beginner (finite + unique) ----------
+    function makeBeginnerStage(n){
+      const s = state.skill || 1;
+      const token = uniqueToken(n);
+      const stageId = `B${n}-${token}`;
+      const type = (n - 1) % 7;
 
-    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // PASTE REST OF YOUR SCRIPT HERE (from makeBeginnerStage onward)
-    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      const a = 2 + ((n * 7) % (10 + s * 6));
+      const b = 3 + ((n * 11) % (10 + s * 6));
+      const c = 1 + ((n * 13) % (6 + s * 3));
 
-    // Startup
+      if(type === 0){
+        const expected = `HELLO ${stageId}`;
+        return {
+          title:`BEGINNER • Stage ${n}/${MAX_BEGINNER_STAGES} – Print`,
+          story:"Beginner concept: print()",
+          prompt:`Print exactly:\n${expected}`,
+          starter:"# Write code\n",
+          hintBudget:10,
+          hints:[`Use print('${expected}')`, "Make sure spaces match exactly."],
+          exampleCode:"print('HELLO B1-ABC123')",
+          expectedOutput: expected,
+          explainKeywords:["print","quotes"],
+          explainMe:"Use print(...) with quotes to match exact text.",
+          validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(expected)
+        };
+      }
+
+      if(type === 1){
+        const x = a + n;
+        const y = b;
+        const expected = String(x + y);
+        return {
+          title:`BEGINNER • Stage ${n}/${MAX_BEGINNER_STAGES} – Math (Add)`,
+          story:"Beginner concept: variables + addition",
+          prompt:`Let x = ${x} and y = ${y}. Print x + y`,
+          starter:"# Write code\n",
+          hintBudget:10,
+          hints:["Define x and y then print x+y"],
+          exampleCode:"x=10\ny=5\nprint(x+y)",
+          expectedOutput: expected,
+          explainKeywords:["x","y","+"],
+          explainMe:"Store numbers in variables and add them.",
+          validate:(_py,out)=> normalizeOutput(out) === expected
+        };
+      }
+
+      if(type === 2){
+        const x = (c + 2) * (1 + (n % 3)) + 1;
+        const y = (b % 9) + 2;
+        const expected = String(x * y);
+        return {
+          title:`BEGINNER • Stage ${n}/${MAX_BEGINNER_STAGES} – Math (Multiply)`,
+          story:"Beginner concept: multiplication",
+          prompt:`Print ${x} * ${y}`,
+          starter:"# Write code\n",
+          hintBudget:10,
+          hints:[`Use print(${x}*${y})`],
+          exampleCode:"print(4*5)",
+          expectedOutput: expected,
+          explainKeywords:["*","multiply"],
+          explainMe:"Use * to multiply numbers.",
+          validate:(_py,out)=> normalizeOutput(out) === expected
+        };
+      }
+
+      if(type === 3){
+        const x = ((n * 17) % 41) - 20;
+        const t = ((n * 19) % 21) - 10;
+        const expected = x > t ? `YES ${stageId}` : `NO ${stageId}`;
+        return {
+          title:`BEGINNER • Stage ${n}/${MAX_BEGINNER_STAGES} – If/Else`,
+          story:"Beginner concept: if/else",
+          prompt:`x=${x}. If x>${t} print "YES ${stageId}" else print "NO ${stageId}"`,
+          starter:"# Write code\n",
+          hintBudget:12,
+          hints:[`if x>${t}:`, "else:"],
+          exampleCode:`x=${x}\nif x>${t}:\n print("YES ${stageId}")\nelse:\n print("NO ${stageId}")`,
+          expectedOutput: expected,
+          explainKeywords:["if","else",">"],
+          explainMe:"Compare x with the threshold and print correct branch.",
+          validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(expected)
+        };
+      }
+
+      if(type === 4){
+        const m = 3 + ((n * 23) % (5 + s * 4));
+        const expected = Array.from({length:m},(_,i)=>String(i+1)).join(" ") + ` ${stageId}`;
+        return {
+          title:`BEGINNER • Stage ${n}/${MAX_BEGINNER_STAGES} – Loop`,
+          story:"Beginner concept: for loop",
+          prompt:`Using a loop, print 1..${m} each on new line.\nThen print this on last line: ${stageId}`,
+          starter:"# Write code\n",
+          hintBudget:12,
+          hints:[`Use range(1, ${m+1})`, "Then print(stageId) as last print."],
+          exampleCode:`for i in range(1,4):\n print(i)\nprint("B1-ABC123")`,
+          expectedOutput: expected,
+          explainKeywords:["for","range","print"],
+          explainMe:"Loop prints numbers; final print outputs tag.",
+          validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(expected)
+        };
+      }
+
+      if(type === 5){
+        const word = `pyquest_${stageId}`.toLowerCase();
+        const expected = word.toUpperCase();
+        return {
+          title:`BEGINNER • Stage ${n}/${MAX_BEGINNER_STAGES} – Strings`,
+          story:"Beginner concept: strings + upper()",
+          prompt:`s="${word}". Print s.upper()`,
+          starter:"# Write code\n",
+          hintBudget:12,
+          hints:["Define s as given", "Use print(s.upper())"],
+          exampleCode:`s="hello"\nprint(s.upper())`,
+          expectedOutput: expected,
+          explainKeywords:["upper","string"],
+          explainMe:"upper() converts text to uppercase.",
+          validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(expected)
+        };
+      }
+
+      const x1 = (n % 9) + 1;
+      const x2 = ((n * 2) % 9) + 1;
+      const x3 = ((n * 3) % 9) + 1;
+      const expected = String(x1 + x2 + x3 + n);
+      return {
+        title:`BEGINNER • Stage ${n}/${MAX_BEGINNER_STAGES} – Lists`,
+        story:"Beginner concept: lists + sum",
+        prompt:`Create nums=[${x1},${x2},${x3}] and print sum(nums) + ${n}`,
+        starter:"# Write code\n",
+        hintBudget:12,
+        hints:["nums=[...]", "print(sum(nums)+n)"],
+        exampleCode:"nums=[1,2,3]\nprint(sum(nums)+5)",
+        expectedOutput: expected,
+        explainKeywords:["list","sum"],
+        explainMe:"sum(nums) adds list values, then add n.",
+        validate:(_py,out)=> normalizeOutput(out) === expected
+      };
+    }
+
+    // ---------- Moderate (finite + unique) ----------
+    function makeModerateStage(n){
+      const token = uniqueToken(n);
+      const stageId = `M${n}-${token}`;
+      const type = (n - 1) % 4;
+
+      if(type === 0){
+        const x = 10 + (n % 25);
+        const expected = String(x + n); // unique
+        return {
+          title:`MODERATE • Stage ${n}/${MAX_MODERATE_STAGES} – Function`,
+          story:"Moderate concept: functions",
+          prompt:`Write function add_n(x) that returns x + ${n}. Print add_n(${x}).`,
+          starter:"# Write code\n",
+          hintBudget:14,
+          hints:["def add_n(x):", "return x + n", "print(add_n(x))"],
+          exampleCode:"def add_n(x):\n return x+3\nprint(add_n(10))",
+          expectedOutput: expected,
+          explainKeywords:["def","return"],
+          explainMe:"Return x + n inside a function.",
+          validate:(_py,out)=> normalizeOutput(out) === expected
+        };
+      }
+
+      if(type === 1){
+        const a = (n % 9) + 1;
+        const b = ((n*2)%9) + 1;
+        const expected = String((a*b) + n); // unique
+        return {
+          title:`MODERATE • Stage ${n}/${MAX_MODERATE_STAGES} – Dict`,
+          story:"Moderate concept: dictionaries",
+          prompt:`Create d={'a':${a}, 'b':${b}} then print d['a']*d['b'] + ${n}`,
+          starter:"# Write code\n",
+          hintBudget:14,
+          hints:["d = {...}", "print(d['a']*d['b'] + n)"],
+          exampleCode:"d={'a':2,'b':3}\nprint(d['a']*d['b']+5)",
+          expectedOutput: expected,
+          explainKeywords:["dict","key"],
+          explainMe:"Access dict values using keys and compute the expression.",
+          validate:(_py,out)=> normalizeOutput(out) === expected
+        };
+      }
+
+      if(type === 2){
+        const expected = `OK ${stageId}`;
+        return {
+          title:`MODERATE • Stage ${n}/${MAX_MODERATE_STAGES} – Try/Except`,
+          story:"Moderate concept: exceptions",
+          prompt:`Use try/except so program prints exactly:\n${expected}\n(no crash allowed)`,
+          starter:"# Write code\n",
+          hintBudget:14,
+          hints:["Use try:", "except:", `Print "${expected}" in except or finally`],
+          exampleCode:`try:\n int('x')\nexcept:\n print("OK M1-ABC123")`,
+          expectedOutput: expected,
+          explainKeywords:["try","except"],
+          explainMe:"Use try/except to prevent crash and print a message.",
+          validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(expected)
+        };
+      }
+
+      const word = `moderate_${stageId}`.toLowerCase();
+      const expected = word.replace(/_/g,"-");
+      return {
+        title:`MODERATE • Stage ${n}/${MAX_MODERATE_STAGES} – Strings`,
+        story:"Moderate concept: string replace",
+        prompt:`s="${word}". Print s.replace("_","-")`,
+        starter:"# Write code\n",
+        hintBudget:14,
+        hints:["Use replace('_','-')", "print(result)"],
+        exampleCode:`s="a_b"\nprint(s.replace("_","-"))`,
+        expectedOutput: expected,
+        explainKeywords:["replace","string"],
+        explainMe:"replace changes one character to another in a string.",
+        validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(expected)
+      };
+    }
+
+    // ---------- Pro (finite) ----------
+    function makeProStage(n){
+      const token = uniqueToken(n);
+      const stageId = `P${n}-${token}`;
+      const type = (n - 1) % 3;
+
+      if(type === 0){
+        const expected = `SQUARES ${stageId}`;
+        return {
+          title:`PRO • Stage ${n}/${MAX_PRO_STAGES} – Comprehension`,
+          story:"Pro concept: list comprehension",
+          prompt:`Create squares=[i*i for i in range(1,6)] then print squares and then print "${expected}"`,
+          starter:"# Write code\n",
+          hintBudget:20,
+          hints:["squares=[i*i for i in range(1,6)]", "print(squares)", `print("${expected}")`],
+          exampleCode:`s=[i*i for i in range(1,4)]\nprint(s)\nprint("SQUARES P1-ABC123")`,
+          expectedOutput: `[1, 4, 9, 16, 25] ${expected}`,
+          explainKeywords:["comprehension","range","i*i"],
+          explainMe:"Comprehension builds a list quickly using a loop.",
+          validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(`[1, 4, 9, 16, 25] ${expected}`)
+        };
+      }
+
+      if(type === 1){
+        const m = 5 + (n % 4);
+        let fac=1; for(let i=1;i<=m;i++) fac*=i;
+        const expected = String(fac + n); // unique
+        return {
+          title:`PRO • Stage ${n}/${MAX_PRO_STAGES} – Factorial`,
+          story:"Pro concept: loops + functions",
+          prompt:`Write function fact(x) factorial. Print fact(${m}) + ${n}`,
+          starter:"# Write code\n",
+          hintBudget:20,
+          hints:["fact multiplies 1..x", "return result", "print(fact(m)+n)"],
+          exampleCode:`def fact(x):\n r=1\n for i in range(1,x+1):\n  r*=i\n return r\nprint(fact(5)+3)`,
+          expectedOutput: expected,
+          explainKeywords:["def","return","*="],
+          explainMe:"Factorial multiplies all numbers from 1..x.",
+          validate:(_py,out)=> normalizeOutput(out) === expected
+        };
+      }
+
+      const expected = `SAFE ${stageId}`;
+      return {
+        title:`PRO • Stage ${n}/${MAX_PRO_STAGES} – Defensive Code`,
+        story:"Pro concept: safe error handling",
+        prompt:`Use try/except so it prints: ${expected}`,
+        starter:"# Write code\n",
+        hintBudget:20,
+        hints:["try:", "except:", `print("${expected}")`],
+        exampleCode:`try:\n 10/0\nexcept:\n print("SAFE P1-ABC123")`,
+        expectedOutput: expected,
+        explainKeywords:["try","except"],
+        explainMe:"try/except prevents crash and handles errors.",
+        validate:(_py,out)=> normalizeOutput(out) === normalizeOutput(expected)
+      };
+    }
+
+    // ---------- Endless Mode (infinite unique mix) ----------
+    function makeEndlessStage(stageNum){
+      // stageNum grows forever
+      const token = uniqueToken(stageNum);
+      const stageId = `E${stageNum}-${token}`;
+
+      // Mix styles from beginner/moderate/pro
+      const picker = (stageNum * 31) % 10;
+
+      // Ensure uniqueness: always includes stageId OR +stageNum
+      if(picker <= 4){
+        // beginner-like
+        return makeBeginnerStage((stageNum % 999999) + 1).validate
+          ? (() => {
+              const base = makeBeginnerStage((stageNum % 999999) + 1);
+              base.title = `ENDLESS • ${base.title.replace("BEGINNER • ","")}`;
+              base.prompt += `\n\n(Endless Tag: ${stageId})\nPrint the tag on last line too: ${stageId}`;
+              const originalExpected = base.expectedOutput || "";
+              base.expectedOutput = `${normalizeOutput(originalExpected)} ${stageId}`.trim();
+              const oldValidate = base.validate;
+              base.validate = (py,out) => {
+                const ok = oldValidate(py,out);
+                // If user prints extra line, normalizeOutput will include it; so validate against new expected
+                return normalizeOutput(out) === normalizeOutput(base.expectedOutput);
+              };
+              base.hints = [...(base.hints||[]), `Also print: ${stageId}`];
+              return base;
+          })()
+          : makeBeginnerStage((stageNum % 999999) + 1);
+      }
+
+      if(picker <= 7){
+        // moderate-like
+        const base = makeModerateStage((stageNum % 999999) + 1);
+        base.title = `ENDLESS • ${base.title.replace("MODERATE • ","")}`;
+        base.prompt += `\n\nAlso print this tag on last line: ${stageId}`;
+        const expected = `${normalizeOutput(base.expectedOutput)} ${stageId}`.trim();
+        base.expectedOutput = expected;
+        const oldValidate = base.validate;
+        base.validate = (py,out) => normalizeOutput(out) === normalizeOutput(expected);
+        base.hints = [...(base.hints||[]), `Finally print: ${stageId}`];
+        return base;
+      }
+
+      // pro-like
+      const base = makeProStage((stageNum % 999999) + 1);
+      base.title = `ENDLESS • ${base.title.replace("PRO • ","")}`;
+      base.prompt += `\n\nAlso print this tag on last line: ${stageId}`;
+      const expected = `${normalizeOutput(base.expectedOutput)} ${stageId}`.trim();
+      base.expectedOutput = expected;
+      base.validate = (_py,out)=> normalizeOutput(out) === normalizeOutput(expected);
+      base.hints = [...(base.hints||[]), `Finally print: ${stageId}`];
+      return base;
+    }
+
+    // ---------- Stage router ----------
+    function makeStage(n){
+      const tr = state.track || "learn";
+      if(tr === "learn") return makeLearnStage(n);
+
+      if(tr === "beginner"){
+        if(n > MAX_BEGINNER_STAGES) return makeBeginnerStage(MAX_BEGINNER_STAGES);
+        return makeBeginnerStage(n);
+      }
+
+      if(tr === "moderate"){
+        if(n > MAX_MODERATE_STAGES) return makeModerateStage(MAX_MODERATE_STAGES);
+        return makeModerateStage(n);
+      }
+
+      if(tr === "pro"){
+        // After Pro completion, Endless stages start at MAX_PRO_STAGES+1
+        if(state.endlessUnlocked && n > MAX_PRO_STAGES){
+          return makeEndlessStage(n - MAX_PRO_STAGES);
+        }
+        if(n > MAX_PRO_STAGES) return makeProStage(MAX_PRO_STAGES);
+        return makeProStage(n);
+      }
+
+      return makeBeginnerStage(n);
+    }
+
+    // ---------- Hint budgets per stage ----------
+    function getHintsLeftForStage(stageNum, budget){
+      const prog = getProgress();
+      const key = String(stageNum);
+      if(prog.perLevelHintsLeft[key] === undefined) prog.perLevelHintsLeft[key] = budget;
+      return prog.perLevelHintsLeft[key];
+    }
+    function setHintsLeftForStage(stageNum, value){
+      const prog = getProgress();
+      prog.perLevelHintsLeft[String(stageNum)] = value;
+    }
+
+    // ---------- Game runtime variables ----------
+    let currentStage = null;
+    let hintsLeft = 0;
+    let shownHints = 0;
+    let hintsUsedThisStage = 0;
+    let stageStartTime = 0;
+
+    let pendingNextStage = null;
+    let pendingSolvedXp = 0;
+
+    // For end-of-track transition
+    let pendingTransition = null; // { type: "toModerate" | "toPro" | "toEndless" }
+
+    // ---------- UI mode for lesson-only stages ----------
+    function setLessonModeUI(isLesson){
+      continueLessonBtn.style.display = isLesson ? "inline-block" : "none";
+      hintBtn.style.display = isLesson ? "none" : "inline-block";
+      exBtn.style.display = isLesson ? "none" : "inline-block";
+      runBtn.style.display = isLesson ? "none" : "inline-block";
+      submitBtn.style.display = isLesson ? "none" : "inline-block";
+      useHintPU.style.display = isLesson ? "none" : "inline-block";
+      useRevealPU.style.display = isLesson ? "none" : "inline-block";
+      useSkipPU.style.display = isLesson ? "none" : "inline-block";
+
+      codeEl.disabled = isLesson;
+      if(isLesson) codeEl.value = "# Lesson screen (no code needed)\n";
+    }
+
+    function loadStage(stageNum){
+      currentStage = makeStage(stageNum);
+      levelTitle.textContent = currentStage.title;
+      storyEl.textContent = currentStage.story;
+      promptEl.textContent = currentStage.prompt;
+
+      outputEl.textContent = "";
+      hintsEl.innerHTML = "";
+
+      shownHints = 0;
+      hintsUsedThisStage = 0;
+      stageStartTime = Date.now();
+
+      const isLesson = !!currentStage.lessonOnly;
+      setLessonModeUI(isLesson);
+
+      if(!isLesson){
+        codeEl.disabled = false;
+        codeEl.value = currentStage.starter;
+      }
+
+      hintsLeft = getHintsLeftForStage(stageNum, currentStage.hintBudget || 0);
+      hintBtn.textContent = `Hint (${hintsLeft} left)`;
+      exBtn.style.display = "none";
+
+      updateTopStats();
+      setWelcome();
+    }
+
+    // ---------- Continue Lesson ----------
+    continueLessonBtn.onclick = async () => {
+      if(!currentStage?.lessonOnly) return;
+      const prog = getProgress();
+      prog.currentLevel = (prog.currentLevel || 1) + 1;
+      showToast("➡️ Next", "Now solve Question 1!");
+      await saveUserProfile().catch(()=>{});
+      loadStage(prog.currentLevel);
+      updateTopStats();
+    };
+
+    // ---------- Powerups ----------
+    useHintPU.onclick = async () => {
+      if(!(state.powerUps?.hint > 0)) return;
+      if(currentStage?.lessonOnly) return;
+      state.powerUps.hint -= 1;
+      hintsLeft += 1;
+      hintBtn.textContent = `Hint (${hintsLeft} left)`;
+      showToast("⚡ +Hint used!", "You gained +1 hint for this stage.");
+      updateTopStats();
+      await saveUserProfile().catch(()=>{});
+    };
+
+    useRevealPU.onclick = async () => {
+      if(!(state.powerUps?.reveal > 0)) return;
+      if(currentStage?.lessonOnly) return;
+      state.powerUps.reveal -= 1;
+      const expected = currentStage.expectedOutput ?? "(unknown)";
+      outputEl.textContent = `👁️ REVEAL\n\nExpected Output:\n${expected}\n\nExtra Tip:\nMatch the mission exactly.`;
+      showToast("👁️ Reveal used!", "Expected output shown in Output box.");
+      updateTopStats();
+      await saveUserProfile().catch(()=>{});
+    };
+
+    useSkipPU.onclick = async () => {
+      if(!(state.powerUps?.skip > 0)) return;
+      const ok = confirm("Use SKIP token? This will skip this stage (NOT counted as solved).");
+      if(!ok) return;
+
+      state.powerUps.skip -= 1;
+      const prog = getProgress();
+      const cur = prog.currentLevel || 1;
+
+      state.skippedLevels = state.skippedLevels || [];
+      if(!state.skippedLevels.includes(cur)) state.skippedLevels.push(cur);
+
+      prog.currentLevel = cur + 1;
+      showToast("⏭️ Skipped!", "Moved to next stage.");
+      await saveUserProfile().catch(()=>{});
+      loadStage(prog.currentLevel);
+      updateTopStats();
+    };
+
+    async function buyPowerUp(kind){
+      const cost = COSTS[kind];
+      if(state.xp < cost){
+        showToast("❌ Not enough XP", `Need ${cost} XP to buy this.`);
+        return;
+      }
+      state.xp -= cost;
+      state.powerUps[kind] = (state.powerUps[kind] || 0) + 1;
+      showToast("✅ Purchased!", `You bought 1 ${kind.toUpperCase()} token.`);
+      grantMilestoneRewards();
+      updateTopStats();
+      updateProfile();
+      await saveUserProfile().catch(()=>{});
+      await refreshChampionStatus().catch(()=>{});
+    }
+    buyHint.onclick = () => buyPowerUp("hint");
+    buyReveal.onclick = () => buyPowerUp("reveal");
+    buySkip.onclick = () => buyPowerUp("skip");
+
+    // ---------- Hints + EX code ----------
+    hintBtn.onclick = async () => {
+      const L = currentStage;
+      if(!L || L.lessonOnly) return;
+      if(hintsLeft <= 0) return;
+
+      hintsLeft--;
+      const cur = getProgress().currentLevel || 1;
+      setHintsLeftForStage(cur, hintsLeft);
+
+      state.hintsUsedTotal += 1;
+      hintsUsedThisStage += 1;
+
+      hintBtn.textContent = `Hint (${hintsLeft} left)`;
+
+      const li = document.createElement("li");
+      li.textContent = L.hints[shownHints] || "Try breaking the problem into smaller steps.";
+      hintsEl.appendChild(li);
+      shownHints++;
+
+      if(hintsLeft === 0){
+        exBtn.style.display = "inline-block";
+        showToast("📘 EX Code unlocked", "You used all hints.\nEX Code is now available.");
+      }
+
+      updateTopStats();
+      await saveUserProfile().catch(()=>{});
+    };
+
+    exBtn.onclick = () => {
+      const L = currentStage;
+      if(!L || L.lessonOnly) return;
+      outputEl.textContent =
+        "📘 EX CODE (similar example, NOT the answer):\n\n" +
+        (L.exampleCode || "No example available") +
+        "\n\n⚠️ Modify this code to solve the mission.";
+    };
+
+    // ---------- Run ----------
+    runBtn.onclick = async () => {
+      if(currentStage?.lessonOnly) return;
+      const py = await ensurePyodide();
+      setBusy(true);
+      try{
+        resetStdout(py);
+        py.runPython(codeEl.value);
+        const out = getStdout(py);
+        outputEl.textContent = out || "(no output)";
+      }catch(e){
+        outputEl.textContent = friendlyError(e);
+      } finally { setBusy(false); }
+    };
+
+    // ---------- Explain your code ----------
+    function scoreExplanation(text, keywords){
+      const t = (text || "").toLowerCase();
+      let hits = 0;
+      for(const k of (keywords || [])){
+        if(t.includes(String(k).toLowerCase())) hits++;
+      }
+      return hits;
+    }
+    function bonusFromExplanation(hits){
+      if(hits >= 4) return 8;
+      if(hits >= 3) return 6;
+      if(hits >= 2) return 4;
+      return 0;
+    }
+
+    btnExplainMe.onclick = () => {
+      explainMeBox.style.display = "block";
+      explainMeText.textContent = currentStage?.explainMe || "Try describing what each line does.";
+    };
+
+    async function afterSolveAdvance(){
+      const prog = getProgress();
+
+      // ✅ handle transitions
+      if(pendingTransition?.type === "toModerate"){
+        showTransitionModal({
+          title: "✅ Beginner Completed!",
+          msg: "You finished Beginner track 🎉\nClick below to start Moderate.",
+          buttonText: "Start Moderate",
+          onConfirm: async () => {
+            state.track = "moderate";
+            if(!state.progressByTrack.moderate) state.progressByTrack.moderate = emptyProgress();
+            state.progressByTrack.moderate.currentLevel = 1;
+            await saveUserProfile().catch(()=>{});
+            loadStage(1);
+            showPlay();
+            showToast("🔥 Moderate Started!", "Good luck!");
+          }
+        });
+        pendingTransition = null;
+        return;
+      }
+
+      if(pendingTransition?.type === "toPro"){
+        showTransitionModal({
+          title: "✅ Moderate Completed!",
+          msg: "You finished Moderate track 🎉\nClick below to start Professional.",
+          buttonText: "Start Professional",
+          onConfirm: async () => {
+            state.track = "pro";
+            if(!state.progressByTrack.pro) state.progressByTrack.pro = emptyProgress();
+            state.progressByTrack.pro.currentLevel = 1;
+            await saveUserProfile().catch(()=>{});
+            loadStage(1);
+            showPlay();
+            showToast("⚡ Pro Started!", "Now it's serious 😈");
+          }
+        });
+        pendingTransition = null;
+        return;
+      }
+
+      if(pendingTransition?.type === "toEndless"){
+        showTransitionModal({
+          title: "🏆 Professional Completed!",
+          msg: "You finished Pro track ✅\nEndless Mode is now unlocked: infinite unique mixed questions 🔥",
+          buttonText: "Start Endless Mode",
+          onConfirm: async () => {
+            state.endlessUnlocked = true;
+            state.track = "pro";
+            if(!state.progressByTrack.pro) state.progressByTrack.pro = emptyProgress();
+            // Endless starts after max pro
+            state.progressByTrack.pro.currentLevel = MAX_PRO_STAGES + 1;
+            await saveUserProfile().catch(()=>{});
+            loadStage(state.progressByTrack.pro.currentLevel);
+            showPlay();
+            showToast("∞ Endless Mode!", "Infinite unique questions unlocked!");
+          }
+        });
+        pendingTransition = null;
+        return;
+      }
+
+      // normal next stage
+      prog.currentLevel = pendingNextStage;
+      pendingNextStage = null;
+
+      grantMilestoneRewards();
+      checkBadges();
+      updateTopStats();
+      await saveUserProfile().catch(()=>{});
+      loadStage(prog.currentLevel);
+      await refreshChampionStatus().catch(()=>{});
+    }
+
+    btnSkipExplain.onclick = async () => {
+      hideExplainModal();
+      state.xp += pendingSolvedXp;
+      pendingSolvedXp = 0;
+      await afterSolveAdvance();
+    };
+
+    btnSubmitExplain.onclick = async () => {
+      const hits = scoreExplanation(explainInput.value, currentStage?.explainKeywords || []);
+      const bonus = bonusFromExplanation(hits);
+      if(bonus <= 0){
+        explainStatus.textContent = "❌ Not enough explanation keywords. Tip: click “Explain me” then write in your own words.";
+        return;
+      }
+      explainStatus.textContent = `✅ Nice! Bonus +${bonus} XP earned.`;
+      showToast("🧠 Explanation Bonus!", `You earned +${bonus} XP for explaining your code!`);
+
+      hideExplainModal();
+      state.xp += (pendingSolvedXp + bonus);
+      pendingSolvedXp = 0;
+
+      await afterSolveAdvance();
+    };
+
+    // ---------- Submit ----------
+    submitBtn.onclick = async () => {
+      if(!state.username){ showLoginModal(); return; }
+      if(currentStage?.lessonOnly){ return; }
+
+      const py = await ensurePyodide();
+      setBusy(true);
+      try{
+        resetStdout(py);
+        py.runPython(codeEl.value);
+
+        const rawOut = getStdout(py);
+        const passed = currentStage.validate(py, rawOut);
+
+        if(passed){
+          const prog = getProgress();
+          const cur = prog.currentLevel || 1;
+
+          if(!state.solvedLevels.includes(cur)) state.solvedLevels.push(cur);
+
+          const bonusHints = Math.max(0, hintsLeft);
+          const baseXp = 10 + bonusHints;
+
+          const solveMs = Date.now() - stageStartTime;
+          state.lastSolveMs = solveMs;
+          adjustDifficulty({ solveMs, hintsUsedThisStage });
+
+          // Decide transitions
+          pendingTransition = null;
+
+          if(state.track === "beginner" && cur >= MAX_BEGINNER_STAGES){
+            pendingTransition = { type: "toModerate" };
+            pendingNextStage = null;
+          } else if(state.track === "moderate" && cur >= MAX_MODERATE_STAGES){
+            pendingTransition = { type: "toPro" };
+            pendingNextStage = null;
+          } else if(state.track === "pro" && !state.endlessUnlocked && cur >= MAX_PRO_STAGES){
+            pendingTransition = { type: "toEndless" };
+            pendingNextStage = null;
+          } else {
+            pendingNextStage = cur + 1;
+          }
+
+          pendingSolvedXp = baseXp;
+          await saveUserProfile().catch(()=>{});
+          showExplainModal(codeEl.value);
+
+        } else {
+          outputEl.textContent =
+            `❌ Not correct yet.\n\nYour Output:\n${normalizeOutput(rawOut) || "(no output)"}\n\nTip: Try again.`;
+        }
+      }catch(e){
+        outputEl.textContent = "❌ Error:\n" + friendlyError(e);
+      } finally { setBusy(false); }
+    };
+
+    // ---------- Switch Mode ----------
+    applyTrack.onclick = async () => {
+      if(!state.username){
+        showToast("❌ Not logged in", "Please login first.");
+        return;
+      }
+      const newTrack = (switchTrack.value || "learn").trim();
+      if(newTrack === state.track){
+        switchMsg.textContent = "You are already on this mode ✅";
+        return;
+      }
+
+      state.track = newTrack;
+      if(!state.progressByTrack[newTrack]) state.progressByTrack[newTrack] = emptyProgress();
+      if(state.track === "learn") state.skill = 1;
+
+      switchMsg.textContent = `✅ Switched to ${trackLabel(newTrack)}.`;
+      setWelcome();
+      updateTopStats();
+      updateProfile();
+
+      await saveUserProfile().catch(()=>{});
+      await refreshChampionStatus().catch(()=>{});
+
+      loadStage(getProgress().currentLevel || 1);
+      showPlay();
+      showToast("✅ Mode switched!", `Now playing: ${trackLabel(newTrack)}`);
+    };
+
+    resetThisTrack.onclick = async () => {
+      if(!state.username) return;
+      const ok = confirm(`Reset ${trackLabel(state.track)} progress to stage 1?`);
+      if(!ok) return;
+
+      state.progressByTrack[state.track] = emptyProgress();
+      switchMsg.textContent = `🔄 Reset done for ${trackLabel(state.track)}.`;
+      await saveUserProfile().catch(()=>{});
+      loadStage(1);
+      showPlay();
+    };
+
+    // ---------- Startup ----------
     async function boot(){
       await ensureAnonAuth();
 
       try{
         await incrementGlobalVisitOncePerTab();
         await readGlobalVisits();
-      } catch (e) {
-        console.warn("Global visits offline:", e);
+      } catch {
         globalVisitsEl.textContent = "offline";
       }
 
@@ -1830,9 +3001,7 @@ print(d["a"]) -> 1`,
             await refreshChampionStatus();
             return;
           }
-        } catch (e) {
-          console.warn("Auto-login failed:", e);
-        }
+        } catch {}
         localStorage.removeItem(SESSION_KEY);
         sessionUser = "";
       }
@@ -1847,6 +3016,7 @@ print(d["a"]) -> 1`,
       try{ await readGlobalVisits(); } catch {}
       try{ await refreshChampionStatus(); } catch {}
     }, 12000);
+
   </script>
 </body>
 </html>
